@@ -3,848 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kindred — Open Source Dating</title>
-    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+    <title>SCRIBBLE | Open Source Dating</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Patrick+Hand&family=Permanent+Marker&family=Architects+Daughter&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
-            --orange: #fb923c;
-            --orange-dark: #ea6c10;
-            --orange-light: #fed7aa;
-            --cream: #fffbf5;
-            --paper: #fef3e2;
-            --ink: #1c1410;
-            --ink-light: #5c4a38;
-            --ink-faint: #a08060;
-            --red: #ef4444;
-            --green: #16a34a;
-            --blue: #2563eb;
+            --ink: #1a1a1a;
+            --paper: #fdfaf0;
+            --marker-red: #d62828;
+            --highlighter: rgba(0, 255, 157, 0.3);
+            --tape-color: rgba(255, 255, 255, 0.4);
         }
 
-        html { scroll-behavior: smooth; }
+        * { box-sizing: border-box; }
 
-        body {
-            background-color: var(--orange);
-            background-image:
-                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c2410c' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            color: var(--ink);
-            font-family: 'Indie Flower', cursive;
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
             overflow-x: hidden;
-            min-height: 100vh;
+            background-color: var(--paper);
+            background-image:
+                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            font-family: 'Architects Daughter', cursive;
+            color: var(--ink);
         }
 
-        /* rough SVG filter */
-        .rough { filter: url(#roughen); }
-        .rough-sm { filter: url(#roughen-sm); }
+        /* ── NAV ── */
+        .scrawl-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(253,250,240,0.92);
+            backdrop-filter: blur(4px);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .logo {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 2rem;
+            transform: rotate(-2deg);
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 12px;
+            background: var(--tape-color);
+            padding: 4px 14px;
+            border: 1px solid #ccc;
+            transform: rotate(1deg);
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--ink);
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+        }
+
+        .nav-links a:hover { border-bottom: 2px wavy var(--marker-red); }
+
+        /* ── HERO — DESKTOP (scattered) ── */
+        .hero-full {
+            min-height: 100vh;
+            padding-top: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 40px;
+        }
+
+        .hero-title {
+            font-family: 'Gochi Hand', cursive;
+            font-size: clamp(2.8rem, 9vw, 7rem);
+            line-height: 0.95;
+            margin: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title span {
+            display: block;
+            color: var(--marker-red);
+            transform: rotate(-2deg) translateX(20px);
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2.5vw, 1.5rem);
+            max-width: 560px;
+            margin-top: 16px;
+            background: var(--highlighter);
+            padding: 4px 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* scattered cards — visible on desktop only */
+        .sketch-element {
+            border: 2px solid var(--ink);
+            background: white;
+            padding: 1.2rem;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.06);
+        }
+
+        /* desktop: absolute positioning */
+        @media (min-width: 900px) {
+            .sketch-element { position: absolute; max-width: 280px; }
+
+            #manifesto-note {
+                top: 14%;
+                left: 4%;
+                transform: rotate(-5deg);
+                border-radius: 10px 100px 15px 120px / 120px 15px 100px 10px;
+            }
+
+            #stats-note {
+                bottom: 10%;
+                left: 6%;
+                transform: rotate(3deg);
+                background: #fff9c4;
+            }
+
+            #drawing-pad {
+                top: 18%;
+                right: 4%;
+                width: 320px;
+                transform: rotate(2deg);
+            }
+
+            #cta-scrawl {
+                bottom: 14%;
+                right: 8%;
+                border: none;
+                background: transparent;
+                box-shadow: none;
+                text-align: right;
+                position: absolute;
+            }
+
+            .arrow-draw { display: block; }
+            .doodle { display: block; }
+        }
+
+        /* mobile: hide scattered elements, show inline cards instead */
+        @media (max-width: 899px) {
+            .sketch-element { display: none; }
+            #cta-scrawl { display: none; }
+            .arrow-draw { display: none; }
+            .doodle { display: none; }
+
+            .mobile-cards {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                width: 100%;
+                max-width: 480px;
+                margin-top: 24px;
+            }
+
+            .mobile-card {
+                border: 2px solid var(--ink);
+                background: white;
+                padding: 1rem 1.2rem;
+                box-shadow: 5px 5px 0 rgba(0,0,0,0.06);
+            }
+
+            .mobile-card:nth-child(odd)  { transform: rotate(-1deg); }
+            .mobile-card:nth-child(even) { transform: rotate(1deg); background: #fff9c4; }
+
+            .mobile-card h3 { margin: 0 0 6px; font-size: 1rem; }
+            .mobile-card p, .mobile-card li { font-size: 0.9rem; margin: 2px 0; }
+            .mobile-card ul { padding-left: 18px; margin: 0; }
+        }
+
+        @media (min-width: 900px) {
+            .mobile-cards { display: none; }
+        }
+
+        /* ── BUTTONS ── */
+        .btn-draw {
+            font-family: 'Permanent Marker', cursive;
+            background: var(--ink);
+            color: white;
+            padding: 14px 36px;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.2s;
+            margin-top: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-draw:hover {
+            transform: scale(1.08) rotate(2deg);
+            background: var(--marker-red);
+        }
+
+        /* ── DECORATIONS ── */
+        .doodle {
+            position: absolute;
+            font-size: 3.5rem;
+            opacity: 0.18;
+            pointer-events: none;
+        }
+
+        .arrow-draw {
+            font-size: 4.5rem;
+            position: absolute;
+            top: 45%;
+            right: 24%;
+            transform: rotate(-30deg);
+            opacity: 0.3;
+        }
+
+        /* ── ROADMAP SECTION ── */
+        .roadmap-section {
+            padding: 80px 40px 60px;
+            background: white;
+            border-top: 5px solid var(--ink);
+        }
+
+        .roadmap-section h2 {
+            font-size: clamp(2rem, 6vw, 4rem);
+            text-decoration: underline;
+            margin-top: 0;
+        }
+
+        .roadmap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .roadmap-grid .sketch-element {
+            position: static !important;
+            transform: none;
+            max-width: 100%;
+        }
+
+        .roadmap-grid .sketch-element:nth-child(2) { transform: rotate(2deg) !important; }
+        .roadmap-grid .sketch-element:nth-child(3) { transform: rotate(-1deg) !important; }
+
+        @media (max-width: 700px) {
+            .roadmap-section { padding: 60px 20px 40px; }
+
+            .roadmap-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            /* re-show roadmap cards on mobile (they were hidden above) */
+            .roadmap-grid .sketch-element {
+                display: block !important;
+                position: static !important;
+            }
+        }
+
+        @media (min-width: 701px) and (max-width: 899px) {
+            .roadmap-grid { grid-template-columns: 1fr 1fr; }
+
+            .roadmap-grid .sketch-element {
+                display: block !important;
+                position: static !important;
+            }
+        }
+
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+
+        /* ── SCROLL HINT ── */
+        .scroll-hint {
+            margin-top: 20px;
+            font-weight: bold;
+            border-bottom: 2px dashed #000;
+            position: relative;
+            z-index: 1;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
 
-<svg style="display:none">
-    <filter id="roughen">
-        <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="5" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <filter id="roughen-sm">
-        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="8" result="noise"/>
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-</svg>
-
-<style>
-    /* ── NAV ── */
-    nav {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 48px;
-        position: relative;
-    }
-
-    nav::after {
-        content: '';
-        position: absolute;
-        bottom: 0; left: 24px; right: 24px;
-        height: 2px;
-        background: var(--ink);
-        border-radius: 2px;
-        filter: url(#roughen-sm);
-    }
-
-    .logo {
-        font-family: 'Indie Flower', cursive;
-        font-size: 2rem;
-        font-weight: 700;
-        color: var(--ink);
-        text-decoration: none;
-        position: relative;
-        display: inline-block;
-    }
-
-    .logo::after {
-        content: '';
-        position: absolute;
-        bottom: 2px; left: -4px; right: -4px;
-        height: 10px;
-        background: var(--cream);
-        z-index: -1;
-        border-radius: 40% 60% 50% 70% / 60% 40% 70% 50%;
-        opacity: 0.7;
-    }
-
-    .nav-links {
-        display: flex;
-        gap: 28px;
-        list-style: none;
-    }
-
-    .nav-links a {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.15rem;
-        color: var(--ink);
-        text-decoration: none;
-        position: relative;
-        padding-bottom: 2px;
-    }
-
-    .nav-links a::after {
-        content: '';
-        position: absolute;
-        bottom: 0; left: 0;
-        width: 0; height: 2px;
-        background: var(--ink);
-        border-radius: 2px;
-        transition: width 0.25s;
-    }
-
-    .nav-links a:hover::after { width: 100%; }
-
-    .nav-btn {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.1rem;
-        font-weight: 700;
-        background: var(--ink);
-        color: var(--orange);
-        border: 2.5px solid var(--ink);
-        padding: 8px 22px;
-        border-radius: 6px 18px 8px 16px / 16px 8px 18px 6px;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-        filter: url(#roughen-sm);
-    }
-
-    .nav-btn:hover { background: var(--cream); color: var(--ink); }
-
-    @media (max-width: 768px) {
-        nav { padding: 16px 20px; }
-        .nav-links { display: none; }
-    }
-
-    /* ── HERO ── */
-    .hero {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 60px 48px 80px;
-        display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
-        gap: 48px;
-        align-items: center;
-    }
-
-    @media (max-width: 860px) {
-        .hero { grid-template-columns: 1fr; padding: 40px 20px 60px; }
-    }
-
-    .hero-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: var(--cream);
-        border: 2px solid var(--ink);
-        padding: 5px 14px;
-        border-radius: 100px;
-        font-family: 'Indie Flower', cursive;
-        font-size: 1rem;
-        margin-bottom: 24px;
-        filter: url(#roughen-sm);
-    }
-
-    .tag-dot {
-        width: 8px; height: 8px;
-        background: var(--green);
-        border-radius: 50%;
-        box-shadow: 0 0 0 3px rgba(22,163,74,0.2);
-        animation: blink 2s infinite;
-    }
-
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-    .hero-title {
-        font-family: 'Indie Flower', cursive;
-        font-size: clamp(3.2rem, 7vw, 6rem);
-        font-weight: 700;
-        line-height: 1.05;
-        margin-bottom: 20px;
-        color: var(--ink);
-    }
-
-    .hero-title .squiggle {
-        position: relative;
-        display: inline-block;
-        color: var(--cream);
-    }
-
-    .hero-title .squiggle::before {
-        content: '';
-        position: absolute;
-        inset: -4px -8px;
-        background: var(--ink);
-        z-index: -1;
-        border-radius: 30% 70% 60% 40% / 50% 40% 60% 50%;
-        filter: url(#roughen-sm);
-    }
-
-    .hero-desc {
-        font-size: 1.05rem;
-        color: var(--ink);
-        opacity: 0.8;
-        max-width: 460px;
-        margin-bottom: 36px;
-        line-height: 1.75;
-    }
-
-    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; }
-
-    .btn-fill {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.25rem;
-        font-weight: 700;
-        background: var(--ink);
-        color: var(--orange);
-        border: 2.5px solid var(--ink);
-        padding: 12px 30px;
-        border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
-        cursor: pointer;
-        box-shadow: 4px 4px 0 var(--ink-light);
-        transition: transform 0.15s, box-shadow 0.15s;
-        filter: url(#roughen-sm);
-    }
-
-    .btn-fill:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink-light); }
-
-    .btn-stroke {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.2rem;
-        font-weight: 600;
-        background: transparent;
-        color: var(--ink);
-        border: 2.5px solid var(--ink);
-        padding: 12px 28px;
-        border-radius: 20px 8px 18px 10px / 10px 18px 8px 20px;
-        cursor: pointer;
-        transition: background 0.15s;
-        filter: url(#roughen-sm);
-    }
-
-    .btn-stroke:hover { background: rgba(28,20,16,0.08); }
-
-    /* ── HERO DOODLE CARD ── */
-    .hero-right {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-    }
-
-    .doodle-card {
-        background: var(--cream);
-        border: 3px solid var(--ink);
-        border-radius: 12px 40px 16px 36px / 36px 16px 40px 12px;
-        padding: 28px;
-        width: 300px;
-        box-shadow: 8px 8px 0 var(--ink);
-        position: relative;
-        filter: url(#roughen-sm);
-    }
-
-    .doodle-card-back {
-        position: absolute;
-        width: 300px;
-        height: 100%;
-        background: var(--paper);
-        border: 3px solid var(--ink);
-        border-radius: 12px 40px 16px 36px / 36px 16px 40px 12px;
-        top: 14px; left: 14px;
-        z-index: -1;
-        filter: url(#roughen-sm);
-    }
-
-    .card-avatar {
-        width: 72px; height: 72px;
-        border-radius: 50%;
-        background: var(--orange-light);
-        border: 3px solid var(--ink);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Indie Flower', cursive;
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 14px;
-        filter: url(#roughen-sm);
-    }
-
-    .card-name {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.6rem;
-        font-weight: 700;
-        margin-bottom: 4px;
-    }
-
-    .card-sub {
-        font-size: 0.85rem;
-        color: var(--ink-light);
-        margin-bottom: 16px;
-    }
-
-    .card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
-
-    .ctag {
-        font-family: 'Indie Flower', cursive;
-        font-size: 0.95rem;
-        background: var(--orange-light);
-        border: 2px solid var(--ink);
-        padding: 2px 10px;
-        border-radius: 100px;
-        filter: url(#roughen-sm);
-    }
-
-    .card-compat {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 18px;
-    }
-
-    .compat-track {
-        flex: 1;
-        height: 8px;
-        background: var(--orange-light);
-        border: 2px solid var(--ink);
-        border-radius: 100px;
-        overflow: hidden;
-        filter: url(#roughen-sm);
-    }
-
-    .compat-fill {
-        height: 100%;
-        background: var(--ink);
-        border-radius: 100px;
-    }
-
-    .compat-pct {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1rem;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .card-actions { display: flex; gap: 10px; }
-
-    .card-btn {
-        flex: 1;
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.05rem;
-        font-weight: 700;
-        padding: 8px;
-        border: 2.5px solid var(--ink);
-        border-radius: 8px 20px 10px 18px / 18px 10px 20px 8px;
-        cursor: pointer;
-        text-align: center;
-        filter: url(#roughen-sm);
-        transition: transform 0.15s;
-    }
-
-    .card-btn:hover { transform: scale(1.04); }
-    .card-btn.pass { background: var(--paper); }
-    .card-btn.connect { background: var(--ink); color: var(--orange); }
-
-    /* sticky notes */
-    .sticky {
-        position: absolute;
-        background: #fef08a;
-        border: 2px solid var(--ink);
-        padding: 10px 14px;
-        font-family: 'Indie Flower', cursive;
-        font-size: 0.95rem;
-        box-shadow: 3px 3px 0 var(--ink);
-        filter: url(#roughen-sm);
-        max-width: 140px;
-        line-height: 1.4;
-    }
-
-    .sticky-1 { top: -20px; right: -30px; transform: rotate(5deg); }
-    .sticky-2 { bottom: -10px; left: -40px; transform: rotate(-4deg); background: #bbf7d0; }
-
-    @media (max-width: 860px) {
-        .sticky { display: none; }
-    }
-</style>
-
-<style>
-    /* ── TICKER ── */
-    .ticker {
-        background: var(--ink);
-        padding: 12px 0;
-        overflow: hidden;
-        white-space: nowrap;
-        margin: 0;
-    }
-
-    .ticker-track {
-        display: inline-block;
-        animation: scroll 25s linear infinite;
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.1rem;
-        color: var(--orange);
-        letter-spacing: 1px;
-    }
-
-    .ticker-track .sep { margin: 0 20px; opacity: 0.5; }
-
-    @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-
-    /* ── SECTION SHARED ── */
-    .section {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 80px 48px;
-    }
-
-    @media (max-width: 768px) { .section { padding: 60px 20px; } }
-
-    .section-label {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1rem;
-        font-weight: 700;
-        letter-spacing: 3px;
-        text-transform: uppercase;
-        color: var(--ink);
-        opacity: 0.6;
-        margin-bottom: 10px;
-    }
-
-    .section-title {
-        font-family: 'Indie Flower', cursive;
-        font-size: clamp(2.2rem, 4vw, 3.4rem);
-        font-weight: 700;
-        line-height: 1.15;
-        margin-bottom: 52px;
-        color: var(--ink);
-    }
-
-    .underline-squig {
-        position: relative;
-        display: inline-block;
-    }
-
-    .underline-squig::after {
-        content: '';
-        position: absolute;
-        bottom: -4px; left: 0; right: 0;
-        height: 6px;
-        background: var(--cream);
-        border-radius: 50%;
-        filter: url(#roughen-sm);
-    }
-
-    /* ── FEATURES ── */
-    .feat-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 24px;
-    }
-
-    @media (max-width: 900px) { .feat-grid { grid-template-columns: 1fr; } }
-
-    .feat-card {
-        background: var(--cream);
-        border: 3px solid var(--ink);
-        border-radius: 10px 36px 12px 32px / 32px 12px 36px 10px;
-        padding: 32px 28px;
-        box-shadow: 6px 6px 0 var(--ink);
-        transition: transform 0.2s, box-shadow 0.2s;
-        filter: url(#roughen-sm);
-    }
-
-    .feat-card:hover { transform: translate(-3px,-3px); box-shadow: 9px 9px 0 var(--ink); }
-
-    .feat-icon {
-        font-size: 2.4rem;
-        margin-bottom: 16px;
-        display: block;
-    }
-
-    .feat-card h3 {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    .feat-card p { font-size: 0.92rem; color: var(--ink-light); line-height: 1.7; }
-
-    /* ── HOW IT WORKS ── */
-    .how-bg {
-        background: var(--ink);
-        padding: 80px 0;
-    }
-
-    .how-bg .section-label { color: var(--orange); opacity: 1; }
-    .how-bg .section-title { color: var(--cream); }
-
-    .steps-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
-    }
-
-    @media (max-width: 900px) { .steps-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 500px) { .steps-grid { grid-template-columns: 1fr; } }
-
-    .step-card {
-        background: var(--orange);
-        border: 3px solid var(--cream);
-        border-radius: 8px 28px 10px 24px / 24px 10px 28px 8px;
-        padding: 28px 22px;
-        position: relative;
-        filter: url(#roughen-sm);
-        transition: transform 0.2s;
-    }
-
-    .step-card:hover { transform: rotate(-1deg) scale(1.02); }
-
-    .step-num {
-        font-family: 'Indie Flower', cursive;
-        font-size: 3.5rem;
-        font-weight: 700;
-        color: var(--cream);
-        opacity: 0.25;
-        line-height: 1;
-        margin-bottom: 8px;
-    }
-
-    .step-card h4 {
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.35rem;
-        font-weight: 700;
-        color: var(--ink);
-        margin-bottom: 8px;
-    }
-
-    .step-card p { font-size: 0.88rem; color: var(--ink); opacity: 0.75; line-height: 1.6; }
-
-    /* ── OSS BANNER ── */
-    .oss-wrap {
-        padding: 0 48px;
-        max-width: 1200px;
-        margin: 80px auto;
-    }
-
-    @media (max-width: 768px) { .oss-wrap { padding: 0 20px; } }
-
-    .oss-box {
-        background: var(--cream);
-        border: 3px solid var(--ink);
-        border-radius: 12px 60px 16px 56px / 56px 16px 60px 12px;
-        padding: 56px 60px;
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 48px;
-        align-items: center;
-        box-shadow: 8px 8px 0 var(--ink);
-        filter: url(#roughen-sm);
-    }
-
-    @media (max-width: 860px) {
-        .oss-box { grid-template-columns: 1fr; padding: 36px 28px; }
-    }
-
-    .oss-box h2 {
-        font-family: 'Indie Flower', cursive;
-        font-size: clamp(1.8rem, 3vw, 2.6rem);
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    .oss-box p { font-size: 0.95rem; color: var(--ink-light); max-width: 460px; line-height: 1.7; }
-
-    .oss-stats { display: flex; gap: 40px; }
-
-    .oss-stat strong {
-        display: block;
-        font-family: 'Indie Flower', cursive;
-        font-size: 3rem;
-        font-weight: 700;
-        color: var(--orange-dark);
-        line-height: 1;
-        margin-bottom: 4px;
-    }
-
-    .oss-stat span { font-size: 0.78rem; color: var(--ink-faint); letter-spacing: 1.5px; text-transform: uppercase; }
-
-    /* ── CTA ── */
-    .cta-section {
-        text-align: center;
-        padding: 80px 24px 100px;
-        max-width: 640px;
-        margin: 0 auto;
-    }
-
-    .cta-section h2 {
-        font-family: 'Indie Flower', cursive;
-        font-size: clamp(2.4rem, 5vw, 4rem);
-        font-weight: 700;
-        line-height: 1.1;
-        margin-bottom: 16px;
-    }
-
-    .cta-section p { color: var(--ink); opacity: 0.7; margin-bottom: 36px; font-size: 1rem; }
-
-    .email-row {
-        display: flex;
-        gap: 10px;
-        max-width: 420px;
-        margin: 0 auto;
-    }
-
-    @media (max-width: 500px) { .email-row { flex-direction: column; } }
-
-    .email-row input {
-        flex: 1;
-        background: var(--cream);
-        border: 3px solid var(--ink);
-        color: var(--ink);
-        padding: 12px 18px;
-        border-radius: 8px 24px 10px 20px / 20px 10px 24px 8px;
-        font-family: 'Indie Flower', cursive;
-        font-size: 0.95rem;
-        outline: none;
-        filter: url(#roughen-sm);
-        transition: box-shadow 0.2s;
-    }
-
-    .email-row input:focus { box-shadow: 4px 4px 0 var(--ink); }
-    .email-row input::placeholder { color: var(--ink-faint); }
-
-    .email-row button {
-        background: var(--ink);
-        color: var(--orange);
-        border: 3px solid var(--ink);
-        padding: 12px 24px;
-        border-radius: 20px 8px 18px 10px / 10px 18px 8px 20px;
-        font-family: 'Indie Flower', cursive;
-        font-size: 1.15rem;
-        font-weight: 700;
-        cursor: pointer;
-        white-space: nowrap;
-        box-shadow: 4px 4px 0 var(--ink-light);
-        filter: url(#roughen-sm);
-        transition: transform 0.15s, box-shadow 0.15s;
-    }
-
-    .email-row button:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink-light); }
-
-    /* ── FOOTER ── */
-    footer {
-        background: var(--ink);
-        padding: 32px 48px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: 'Indie Flower', cursive;
-        font-size: 1rem;
-        color: var(--orange-light);
-    }
-
-    @media (max-width: 600px) {
-        footer { flex-direction: column; gap: 14px; text-align: center; padding: 24px 20px; }
-    }
-
-    .footer-logo { font-size: 1.4rem; font-weight: 700; color: var(--orange); }
-
-    .footer-links { display: flex; gap: 24px; }
-    .footer-links a { color: var(--orange-light); text-decoration: none; transition: color 0.2s; }
-    .footer-links a:hover { color: var(--orange); }
-</style>
-
-    <!-- NAV -->
-    <nav>
-        <a class="logo" href="#">kindred</a>
-        <ul class="nav-links">
-            <li><a href="#">How it works</a></li>
-            <li><a href="#">Open Source</a></li>
-            <li><a href="#">Community</a></li>
-        </ul>
-        <button class="nav-btn" onclick="location.href='join.html'">Join Waitlist</button>
+    <nav class="scrawl-nav">
+        <div class="logo">SCRIBBLE</div>
+        <div class="nav-links">
+            <a href="manifesto.html">Manifesto</a>
+            <a href="login.html">Login</a>
+        </div>
     </nav>
 
-    <!-- HERO -->
-    <section class="hero">
-        <div>
-            <div class="hero-tag rough-sm">
-                <span class="tag-dot"></span>
-                Free &amp; Open Source · MIT Licensed
+    <main class="hero-full">
+        <!-- decorations (desktop only) -->
+        <div class="doodle" style="top: 12%; left: 42%;">💌</div>
+        <div class="doodle" style="bottom: 22%; left: 52%;">❤️</div>
+        <div class="doodle" style="top: 62%; left: 12%;">✨</div>
+        <div class="arrow-draw">&Rarr;</div>
+
+        <!-- scattered cards (desktop only) -->
+        <section class="sketch-element" id="manifesto-note">
+            <h3>&bull; Community Rules</h3>
+            <p>1. Be honest, be yourself.</p>
+            <p>2. Respect every user.</p>
+            <p>3. Fork it, improve it, share it.</p>
+            <p><small><i>- The Scribble Community</i></small></p>
+        </section>
+
+        <section class="sketch-element" id="stats-note">
+            <h3>Live Stats:</h3>
+            <ul>
+                <li>4,021 Active Users</li>
+                <li>892 Connections Made</li>
+                <li>12 Open Pull Requests</li>
+            </ul>
+        </section>
+
+        <section class="sketch-element" id="drawing-pad">
+            <h3 style="margin-top:0">Today's Prompt ✏️</h3>
+            <p id="prompt-text" style="font-size: 0.95rem; line-height: 1.5; min-height: 60px; background: var(--highlighter); padding: 8px 10px; margin: 10px 0;"></p>
+            <button onclick="newPrompt()" style="background:none; border:2px solid var(--ink); cursor:pointer; font-family:'Architects Daughter',cursive; font-size:0.8rem; padding:4px 12px;">New prompt ↺</button>
+        </section>
+
+        <section id="cta-scrawl">
+            <h2 style="font-family: 'Gochi Hand'; margin:0;">Wanna contribute?</h2>
+            <p>The code is open. <br>The love is real.</p>
+            <div style="font-family: monospace; opacity: 0.5; font-size: 0.75rem;">01001100 01001111 01010110 01000101</div>
+        </section>
+
+        <!-- hero text -->
+        <h1 class="hero-title">
+            DATING, BUILT<br>
+            <span>IN THE OPEN.</span>
+        </h1>
+        <p class="hero-subtitle">SCRIBBLE is a free, open-source dating platform — transparent by design, community-driven, and built for real connections.</p>
+
+        <button class="btn-draw" onclick="window.location.href='join.html'">JOIN SCRIBBLE FREE</button>
+
+        <!-- inline cards for mobile -->
+        <div class="mobile-cards">
+            <div class="mobile-card">
+                <h3>&bull; Community Rules</h3>
+                <p>1. Be honest, be yourself.</p>
+                <p>2. Respect every user.</p>
+                <p>3. Fork it, improve it, share it.</p>
             </div>
-            <h1 class="hero-title">
-                Dating that<br>
-                feels <span class="squiggle">human.</span>
-            </h1>
-            <p class="hero-desc">
-                No dark patterns. No paywalls. No algorithm selling your loneliness back to you.
-                Kindred is community-built — transparent, private, and actually free.
-            </p>
-            <div class="hero-actions">
-                <button class="btn-fill" onclick="location.href='join.html'">Get Early Access</button>
-                <button class="btn-stroke">★ View on GitHub</button>
+            <div class="mobile-card">
+                <h3>Live Stats:</h3>
+                <ul>
+                    <li>4,021 Active Users</li>
+                    <li>892 Connections Made</li>
+                    <li>12 Open Pull Requests</li>
+                </ul>
+            </div>
+            <div class="mobile-card">
+                <h3>Wanna contribute?</h3>
+                <p>The code is open. The love is real.</p>
             </div>
         </div>
 
-        <div class="hero-right">
-            <div class="doodle-card-back"></div>
-            <div class="doodle-card">
-                <div class="sticky sticky-1">✨ 87% match!</div>
-                <div class="sticky sticky-2">🔒 E2E encrypted</div>
+        <p class="scroll-hint">Scroll to see the roadmap ↓</p>
+    </main>
 
-                <div class="card-avatar rough-sm">J</div>
-                <div class="card-name">Jordan, 26</div>
-                <div class="card-sub">Design · Hiking · Vinyl records</div>
-                <div class="card-tags">
-                    <span class="ctag">Introvert</span>
-                    <span class="ctag">Coffee snob</span>
-                    <span class="ctag">Late nights</span>
-                </div>
-                <div class="card-compat">
-                    <div class="compat-track">
-                        <div class="compat-fill" style="width:87%"></div>
-                    </div>
-                    <span class="compat-pct">87%</span>
-                </div>
-                <div class="card-actions">
-                    <button class="card-btn pass">Pass</button>
-                    <button class="card-btn connect">Connect ♥</button>
-                </div>
+    <section class="roadmap-section">
+        <h2>The Roadmap</h2>
+        <div class="roadmap-grid">
+            <div class="sketch-element">
+                <h3>Q1: The Foundation</h3>
+                <p>Launch the open-source core: profiles, matching algorithm, and community guidelines.</p>
+            </div>
+            <div class="sketch-element">
+                <h3>Q2: The Connection</h3>
+                <p>Private messaging, end-to-end encrypted chats, and community moderation tools.</p>
+            </div>
+            <div class="sketch-element">
+                <h3>Q3: The Community</h3>
+                <p>Public API, third-party integrations, and open-source success stories.</p>
             </div>
         </div>
+        <footer>
+            &copy; 2026 SCRIBBLE &mdash; An open-source project by the community, for the community. Licensed under MIT.
+        </footer>
     </section>
 
-    <!-- TICKER -->
-    <div class="ticker">
-        <div class="ticker-track">
-            Open Source <span class="sep">✦</span> No Ads <span class="sep">✦</span> Privacy First <span class="sep">✦</span> Community Governed <span class="sep">✦</span> Self Hostable <span class="sep">✦</span> MIT Licensed <span class="sep">✦</span> No Paywalls <span class="sep">✦</span> Transparent Algorithm <span class="sep">✦</span> You Own Your Data <span class="sep">✦</span>
-            Open Source <span class="sep">✦</span> No Ads <span class="sep">✦</span> Privacy First <span class="sep">✦</span> Community Governed <span class="sep">✦</span> Self Hostable <span class="sep">✦</span> MIT Licensed <span class="sep">✦</span> No Paywalls <span class="sep">✦</span> Transparent Algorithm <span class="sep">✦</span> You Own Your Data <span class="sep">✦</span>
-        </div>
-    </div>
+    <script>
+        const prompts = [
+            "What's a place you'd take someone on a first date that isn't a restaurant?",
+            "If your personality was a weather type, what would it be?",
+            "What's the last thing that genuinely made you laugh out loud?",
+            "Describe your perfect Sunday in three words.",
+            "What's a skill you're secretly proud of?",
+            "If you could only eat one cuisine for the rest of your life, what's it?",
+            "What's a movie you can quote entirely from memory?",
+            "Morning person or night owl — and is there a story behind it?",
+            "What's something small that makes your day better every time?",
+            "If you had a theme song, what would it be?",
+            "What's the most spontaneous thing you've ever done?",
+            "Tea, coffee, or chaos — which one are you?",
+        ];
 
-    <!-- FEATURES -->
-    <section class="section">
-        <p class="section-label">Why Kindred</p>
-        <h2 class="section-title">Dating apps are broken.<br><span class="underline-squig">We're fixing that.</span></h2>
-        <div class="feat-grid">
-            <div class="feat-card">
-                <span class="feat-icon">🔍</span>
-                <h3>Transparent Matching</h3>
-                <p>Our matching logic lives on GitHub. Read it, audit it, improve it. No black box deciding who you meet.</p>
-            </div>
-            <div class="feat-card">
-                <span class="feat-icon">🗝️</span>
-                <h3>You Own Your Data</h3>
-                <p>Export everything, delete everything, self-host everything. Your data never leaves without your permission.</p>
-            </div>
-            <div class="feat-card">
-                <span class="feat-icon">🌱</span>
-                <h3>Intentional Connections</h3>
-                <p>No infinite scroll. A curated set of compatible people per week. Quality over dopamine hits.</p>
-            </div>
-        </div>
-    </section>
+        let last = -1;
+        function newPrompt() {
+            let i;
+            do { i = Math.floor(Math.random() * prompts.length); } while (i === last);
+            last = i;
+            document.getElementById('prompt-text').textContent = prompts[i];
+        }
 
-    <!-- HOW IT WORKS -->
-    <div class="how-bg">
-        <div class="section">
-            <p class="section-label">The Process</p>
-            <h2 class="section-title">Simple by design.</h2>
-            <div class="steps-grid">
-                <div class="step-card">
-                    <div class="step-num">01</div>
-                    <h4>Build your profile</h4>
-                    <p>Tell us who you are — your values, interests, and what you're genuinely looking for.</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-num">02</div>
-                    <h4>Get matched</h4>
-                    <p>Our open algorithm surfaces a handful of compatible people. No swiping, no gamification.</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-num">03</div>
-                    <h4>Start talking</h4>
-                    <p>Reach out when you're ready. No timers, no pressure, no expiring matches.</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-num">04</div>
-                    <h4>Meet in real life</h4>
-                    <p>The app is a bridge, not a destination. We celebrate when you close the laptop.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- OSS BANNER -->
-    <div class="oss-wrap">
-        <div class="oss-box">
-            <div>
-                <h2>Built in the open,<br>for everyone.</h2>
-                <p>Kindred is MIT licensed. Run your own instance for your community, contribute features, or just read the code and trust what you use.</p>
-            </div>
-            <div class="oss-stats">
-                <div class="oss-stat">
-                    <strong>MIT</strong>
-                    <span>License</span>
-                </div>
-                <div class="oss-stat">
-                    <strong>∞</strong>
-                    <span>Forks</span>
-                </div>
-                <div class="oss-stat">
-                    <strong>$0</strong>
-                    <span>Paywalls</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- CTA -->
-    <section class="cta-section">
-        <h2>Ready to meet someone real? ♥</h2>
-        <p>Join the waitlist. Rolling out city by city, community by community.</p>
-        <form class="email-row" onsubmit="return false;">
-            <input type="email" placeholder="your@email.com" aria-label="Email address" />
-            <button type="submit" onclick="location.href='join.html'">Get Access</button>
-        </form>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-logo">kindred</div>
-        <div>© 2026 — MIT License</div>
-        <div class="footer-links">
-            <a href="#">GitHub</a>
-            <a href="#">Privacy</a>
-            <a href="#">Docs</a>
-            <a href="#">Community</a>
-        </div>
-    </footer>
-
+        newPrompt();
+    </script>
 </body>
 </html>

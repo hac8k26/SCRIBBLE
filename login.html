@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCRIBBLE | Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Permanent+Marker&family=Architects+Daughter&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a1a;
+            --paper: #fdfaf0;
+            --marker-red: #d62828;
+            --highlighter: rgba(0, 255, 157, 0.3);
+            --tape-color: rgba(255,255,255,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            font-family: 'Architects Daughter', cursive;
+            color: var(--ink);
+            background: var(--paper);
+            background-image:
+                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            height: 56px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(253,250,240,0.95);
+            backdrop-filter: blur(4px);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .logo {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.8rem;
+            transform: rotate(-2deg);
+            text-decoration: none;
+            color: var(--ink);
+            line-height: 1;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            background: var(--tape-color);
+            padding: 4px 14px;
+            border: 1px solid #ccc;
+            transform: rotate(1deg);
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--ink);
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active { border-bottom: 2px wavy var(--marker-red); color: var(--marker-red); }
+
+        /* MAIN SPLIT */
+        .screen {
+            position: fixed;
+            top: 56px; left: 0; right: 0; bottom: 0;
+            display: flex;
+        }
+
+        /* LEFT */
+        .left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 60px;
+            border-right: 2px solid rgba(0,0,0,0.07);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .left .big-logo {
+            font-family: 'Permanent Marker', cursive;
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            transform: rotate(-3deg);
+            line-height: 1;
+            margin-bottom: 18px;
+        }
+
+        .left .tagline {
+            font-family: 'Gochi Hand', cursive;
+            font-size: clamp(1.1rem, 2.2vw, 1.6rem);
+            background: var(--highlighter);
+            padding: 4px 10px;
+            display: inline-block;
+            max-width: 340px;
+            line-height: 1.5;
+        }
+
+        .deco {
+            position: absolute;
+            font-size: 5rem;
+            opacity: 0.07;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* RIGHT */
+        .right {
+            width: 400px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 36px;
+        }
+
+        .card {
+            width: 100%;
+            background: white;
+            border: 2px solid var(--ink);
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.07);
+            padding: 1.8rem 2rem;
+            transform: rotate(-0.8deg);
+            position: relative;
+        }
+
+        .tape {
+            position: absolute;
+            top: -13px; left: 50%;
+            transform: translateX(-50%) rotate(1deg);
+            width: 70px; height: 22px;
+            background: rgba(255,255,200,0.9);
+            border: 1px solid #ccc;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            border: 2px solid var(--ink);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 7px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 0.95rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--ink);
+            opacity: 0.35;
+            transition: 0.15s;
+        }
+
+        .tab.active { background: var(--ink); color: white; opacity: 1; }
+
+        /* FORM PANELS */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        .card h1 {
+            font-family: 'Gochi Hand', cursive;
+            font-size: 2rem;
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+
+        .card h1 span { color: var(--marker-red); }
+
+        .sub {
+            font-size: 0.82rem;
+            opacity: 0.5;
+            margin-bottom: 18px;
+        }
+
+        .field { margin-bottom: 14px; }
+
+        .field label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid var(--ink);
+            background: var(--paper);
+            font-family: 'Architects Daughter', cursive;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .field input:focus { border-color: var(--marker-red); background: white; }
+
+        /* PASSWORD EYE */
+        .pw-wrap { position: relative; }
+        .pw-wrap input { padding-right: 40px; }
+
+        .eye-btn {
+            position: absolute;
+            right: 9px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            cursor: pointer; padding: 0;
+            display: flex; align-items: center;
+        }
+
+        .eye-btn svg {
+            width: 18px; height: 18px;
+            stroke: var(--ink); fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.2s;
+        }
+
+        .eye-btn:hover svg { stroke: var(--marker-red); }
+
+        @keyframes blink {
+            0%,100% { transform: scaleY(1); }
+            50%      { transform: scaleY(0.15); }
+        }
+
+        .eye-btn.blink svg { animation: blink 0.18s ease; }
+
+        .forgot {
+            display: block;
+            text-align: right;
+            font-size: 0.76rem;
+            opacity: 0.45;
+            margin-top: -6px;
+            margin-bottom: 16px;
+            text-decoration: none;
+            color: var(--ink);
+        }
+
+        .forgot:hover { opacity: 1; text-decoration: underline wavy var(--marker-red); }
+
+        .btn {
+            font-family: 'Permanent Marker', cursive;
+            background: var(--ink);
+            color: white;
+            width: 100%;
+            padding: 11px;
+            font-size: 1.15rem;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: var(--marker-red); transform: scale(1.02) rotate(0.8deg); }
+
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        .msg-box {
+            margin-top: 10px;
+            padding: 8px 10px;
+            font-size: 0.78rem;
+            text-align: center;
+            display: none;
+        }
+
+        .msg-box.error { background: #fde8e8; color: var(--marker-red); border: 1px solid var(--marker-red); }
+        .msg-box.success { background: var(--highlighter); color: #166534; border: 1px solid #86efac; }
+
+        .oss-note {
+            margin-top: 14px;
+            padding: 7px 10px;
+            background: var(--highlighter);
+            font-size: 0.74rem;
+            text-align: center;
+            transform: rotate(0.3deg);
+        }
+
+        /* MOBILE */
+        @media (max-width: 680px) {
+            html, body { overflow: auto; }
+            .screen { position: static; flex-direction: column; }
+            .left {
+                border-right: none;
+                border-bottom: 2px solid rgba(0,0,0,0.07);
+                padding: 30px 24px;
+                min-height: 36vh;
+            }
+            .right { width: 100%; padding: 24px 20px 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="index.html" class="logo">SCRIBBLE</a>
+        <div class="nav-links">
+            <a href="manifesto.html">Manifesto</a>
+            <a href="login.html" class="active">Login</a>
+        </div>
+    </nav>
+
+    <div class="screen">
+
+        <!-- LEFT -->
+        <div class="left">
+            <div class="deco" style="top:8%;right:8%;">💌</div>
+            <div class="deco" style="bottom:12%;left:5%;">✍️</div>
+            <div class="deco" style="top:52%;right:18%;">❤️</div>
+            <div class="big-logo">SCRIBBLE</div>
+            <p class="tagline">Open source dating. Transparent by design. Built for real connections.</p>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="right">
+            <div class="card">
+                <div class="tape"></div>
+
+                <div class="tabs">
+                    <button class="tab active" id="tab-in"  onclick="switchTab('in')">Sign In</button>
+                    <button class="tab"        id="tab-up"  onclick="switchTab('up')">Sign Up</button>
+                </div>
+
+                <!-- SIGN IN -->
+                <div class="panel active" id="panel-in">
+                    <h1>Welcome<span> back.</span></h1>
+                    <p class="sub">Sign in to your SCRIBBLE account.</p>
+                    <form onsubmit="signIn(event)">
+                        <div class="field">
+                            <label for="li-email">Email</label>
+                            <input type="email" id="li-email" placeholder="you@example.com" autocomplete="email" required />
+                        </div>
+                        <div class="field">
+                            <label for="li-pw">Password</label>
+                            <div class="pw-wrap">
+                                <input type="password" id="li-pw" placeholder="••••••••" autocomplete="current-password" required />
+                                <button type="button" class="eye-btn" onclick="togglePw('li-pw',this)" aria-label="Show/hide password">
+                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <a href="#" class="forgot" onclick="forgotPassword(event)">Forgot password?</a>
+                        <button type="submit" class="btn" id="btn-in">SIGN IN</button>
+                        <div class="msg-box" id="msg-in"></div>
+                    </form>
+                </div>
+
+                <!-- SIGN UP -->
+                <div class="panel" id="panel-up">
+                    <h1>Join <span>Scribble.</span></h1>
+                    <p class="sub">Create your free account.</p>
+                    <form onsubmit="signUp(event)">
+                        <div class="field">
+                            <label for="su-email">Email</label>
+                            <input type="email" id="su-email" placeholder="you@example.com" autocomplete="email" required />
+                        </div>
+                        <div class="field">
+                            <label for="su-pw">Password</label>
+                            <div class="pw-wrap">
+                                <input type="password" id="su-pw" placeholder="Create a password (min 6 chars)" autocomplete="new-password" required minlength="6" />
+                                <button type="button" class="eye-btn" onclick="togglePw('su-pw',this)" aria-label="Show/hide password">
+                                    <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn" id="btn-up">CREATE ACCOUNT</button>
+                        <div class="msg-box" id="msg-up"></div>
+                    </form>
+                </div>
+
+                <div class="oss-note">🔓 Open source & privacy-first. Your data stays yours.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://jlncfyucnhefshzmsyvm.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsbmNmeXVjbmhlZnNoem1zeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDAzNDksImV4cCI6MjA5MDE3NjM0OX0.ifGxina78eOSwobNBvreypFZHZ70OVpOKGQHYJOXdSI';
+
+        function switchTab(t) {
+            document.getElementById('panel-in').classList.toggle('active', t === 'in');
+            document.getElementById('panel-up').classList.toggle('active', t === 'up');
+            document.getElementById('tab-in').classList.toggle('active', t === 'in');
+            document.getElementById('tab-up').classList.toggle('active', t === 'up');
+        }
+
+        function togglePw(id, btn) {
+            const inp = document.getElementById(id);
+            const showing = inp.type === 'text';
+            inp.type = showing ? 'password' : 'text';
+            btn.querySelector('svg').innerHTML = showing
+                ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+                : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+            btn.classList.add('blink');
+            btn.addEventListener('animationend', () => btn.classList.remove('blink'), { once: true });
+        }
+
+        function showMsg(id, text, type) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = 'msg-box ' + type;
+            el.style.display = 'block';
+        }
+
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            btn.disabled = loading;
+            btn.textContent = loading ? 'Please wait...' : (btnId === 'btn-in' ? 'SIGN IN' : 'CREATE ACCOUNT');
+        }
+
+        async function signIn(e) {
+            e.preventDefault();
+            const email    = document.getElementById('li-email').value.trim();
+            const password = document.getElementById('li-pw').value;
+            setLoading('btn-in', true);
+
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            setLoading('btn-in', false);
+
+            if (!res.ok) {
+                showMsg('msg-in', data.error_description || data.msg || 'Sign in failed.', 'error');
+                return;
+            }
+
+            // store session
+            localStorage.setItem('sb_access_token', data.access_token);
+            localStorage.setItem('sb_user_id', data.user.id);
+            localStorage.setItem('sb_user_email', data.user.email);
+
+            showMsg('msg-in', 'Signed in! Redirecting...', 'success');
+            setTimeout(() => window.location.href = 'match.html', 1000);
+        }
+
+        async function signUp(e) {
+            e.preventDefault();
+            const email    = document.getElementById('su-email').value.trim();
+            const password = document.getElementById('su-pw').value;
+            setLoading('btn-up', true);
+
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+            setLoading('btn-up', false);
+
+            if (!res.ok) {
+                showMsg('msg-up', data.error_description || data.msg || 'Sign up failed.', 'error');
+                return;
+            }
+
+            // mailer_autoconfirm is off — user needs to confirm email
+            showMsg('msg-up', '✅ Check your email to confirm your account!', 'success');
+        }
+
+        async function forgotPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('li-email').value.trim();
+            if (!email) { showMsg('msg-in', 'Enter your email first.', 'error'); return; }
+
+            const res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+                method: 'POST',
+                headers: { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            showMsg('msg-in', res.ok ? '📧 Password reset email sent!' : 'Could not send reset email.', res.ok ? 'success' : 'error');
+        }
+
+        // redirect if already logged in
+        if (localStorage.getItem('sb_access_token')) {
+            window.location.href = 'match.html';
+        }
+    </script>
+</body>
+</html>
