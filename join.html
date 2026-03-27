@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kindred — Join</title>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script>
+        const { createClient } = window.supabase;
+        const sb = createClient(
+            'https://jlncfyucnhefshzmsyvm.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsbmNmeXVjbmhlZnNoem1zeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDAzNDksImV4cCI6MjA5MDE3NjM0OX0.ifGxina78eOSwobNBvreypFZHZ70OVpOKGQHYJOXdSI'
+        );
+    </script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --orange: #fb923c; --orange-dark: #ea6c10; --orange-light: #fed7aa;
+            --cream: #fffbf5; --ink: #1c1410; --ink-light: #5c4a38; --ink-faint: #a08060;
+        }
+        html, body {
+            height: 100%; overflow: hidden;
+            font-family: 'Indie Flower', cursive;
+            color: var(--ink);
+            background-color: var(--orange);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c2410c' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* ── PROGRESS BAR ── */
+        .prog-bar {
+            position: fixed; top: 0; left: 0; right: 0; height: 4px;
+            background: rgba(28,20,16,0.12); z-index: 10;
+        }
+        .prog-fill {
+            height: 100%; background: var(--ink);
+            transition: width 0.5s cubic-bezier(.4,0,.2,1); width: 0%;
+        }
+
+        /* ── NAV ── */
+        nav {
+            position: fixed; top: 4px; left: 0; right: 0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 40px; z-index: 9;
+        }
+        .logo {
+            font-size: 1.6rem; font-weight: 700; color: var(--ink);
+            text-decoration: none; position: relative; display: inline-block;
+        }
+        .logo::after {
+            content: ''; position: absolute; bottom: 0; left: -4px; right: -4px;
+            height: 9px; background: var(--cream); z-index: -1;
+            border-radius: 40% 60% 50% 70% / 60% 40% 70% 50%; opacity: 0.7;
+        }
+        .step-counter {
+            font-size: 1rem; color: var(--ink); opacity: 0.45;
+        }
+
+        /* ── SCREEN ── */
+        .screen {
+            position: fixed; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 80px 24px 60px;
+            opacity: 0; pointer-events: none;
+            transform: translateY(40px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .screen.active {
+            opacity: 1; pointer-events: all; transform: translateY(0);
+        }
+        .screen.exit-up {
+            opacity: 0; transform: translateY(-40px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* ── QUESTION ── */
+        .question {
+            font-size: clamp(1.8rem, 5vw, 3rem); font-weight: 700;
+            text-align: center; line-height: 1.2; margin-bottom: 10px;
+            max-width: 600px;
+        }
+        .question .hl {
+            position: relative; display: inline-block; color: var(--cream);
+        }
+        .question .hl::before {
+            content: ''; position: absolute; inset: -3px -8px;
+            background: var(--ink); z-index: -1;
+            border-radius: 30% 70% 60% 40% / 50% 40% 60% 50%;
+            filter: url(#rs);
+        }
+        .hint {
+            font-size: 1rem; color: var(--ink); opacity: 0.5;
+            margin-bottom: 40px; text-align: center;
+        }
+
+        /* ── TEXT INPUT ── */
+        .big-input {
+            font-family: 'Indie Flower', cursive;
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            background: transparent; border: none;
+            border-bottom: 3px solid var(--ink);
+            color: var(--ink); text-align: center;
+            width: 100%; max-width: 420px;
+            padding: 8px 4px 12px; outline: none;
+            transition: border-color 0.2s;
+        }
+        .big-input:focus { border-color: var(--orange-dark); }
+        .big-input::placeholder { color: var(--ink-faint); }
+
+        /* ── OPTION TILES (gender / campus) ── */
+        .tiles {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            justify-content: center; max-width: 680px;
+        }
+        .tile {
+            position: relative; cursor: pointer;
+        }
+        .tile input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .tile label {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 6px; padding: 18px 28px;
+            border: 2.5px solid var(--ink);
+            border-radius: 8px 28px 10px 24px / 24px 10px 28px 8px;
+            background: rgba(255,251,245,0.35);
+            font-size: 1.15rem; cursor: pointer;
+            transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+            filter: url(#rs); user-select: none;
+            backdrop-filter: blur(2px);
+        }
+        .tile label .tile-emoji { font-size: 1.8rem; }
+        .tile input:checked + label {
+            background: var(--ink); color: var(--orange);
+            box-shadow: 5px 5px 0 var(--ink-light);
+            transform: translate(-2px,-2px);
+        }
+        .tile label:hover { box-shadow: 4px 4px 0 var(--ink); transform: translate(-1px,-1px); }
+
+        /* ── CUSTOM COLLEGE PICKER ── */
+        .college-picker { width: 100%; max-width: 520px; position: relative; }
+
+        .college-search-wrap { position: relative; margin-bottom: 12px; }
+        .college-search-wrap::after {
+            content: '🔍'; position: absolute; left: 10px; top: 50%;
+            transform: translateY(-50%); font-size: 1rem; pointer-events: none;
+        }
+        .college-search {
+            width: 100%; font-family: 'Indie Flower', cursive;
+            font-size: 1.2rem; background: transparent;
+            border: none; border-bottom: 3px solid var(--ink);
+            color: var(--ink); padding: 8px 8px 10px 34px;
+            outline: none; transition: border-color 0.2s;
+        }
+        .college-search:focus { border-color: var(--orange-dark); }
+        .college-search::placeholder { color: var(--ink-faint); font-family: 'Indie Flower', cursive; }
+
+        .college-list {
+            max-height: 240px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 4px;
+            padding-right: 4px;
+        }
+        .college-list::-webkit-scrollbar { width: 4px; }
+        .college-list::-webkit-scrollbar-track { background: transparent; }
+        .college-list::-webkit-scrollbar-thumb { background: var(--ink); opacity: 0.3; border-radius: 4px; }
+
+        .college-group-label {
+            font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--ink); opacity: 0.35; padding: 10px 4px 4px;
+            border-top: 1.5px dashed rgba(28,20,16,0.15); margin-top: 4px;
+        }
+        .college-group-label:first-child { border-top: none; margin-top: 0; }
+
+        .college-item {
+            font-family: 'Indie Flower', cursive; font-size: 1.05rem;
+            padding: 9px 14px; cursor: pointer; border-radius: 4px 16px 4px 16px / 16px 4px 16px 4px;
+            transition: background 0.15s, transform 0.1s;
+            border: 2px solid transparent;
+            color: var(--ink);
+        }
+        .college-item:hover {
+            background: rgba(28,20,16,0.07);
+            border-color: rgba(28,20,16,0.15);
+            transform: translateX(4px);
+        }
+        .college-item.selected {
+            background: var(--ink); color: var(--orange);
+            border-color: var(--ink);
+            box-shadow: 3px 3px 0 var(--ink-light);
+        }
+        .college-item.hidden { display: none; }
+        .college-no-result {
+            font-family: 'Indie Flower', cursive; font-size: 1rem;
+            color: var(--ink-faint); text-align: center; padding: 20px;
+            display: none;
+        }
+
+        /* ── NEXT BUTTON ── */
+        .next-btn {
+            margin-top: 36px;
+            font-family: 'Indie Flower', cursive; font-size: 1.25rem; font-weight: 700;
+            background: var(--ink); color: var(--orange);
+            border: 2.5px solid var(--ink);
+            padding: 12px 40px;
+            border-radius: 6px 22px 8px 20px / 20px 8px 22px 6px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0 var(--ink-light);
+            filter: url(#rs); transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .next-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--ink-light); }
+
+        /* ── ERROR ── */
+        .err {
+            font-size: 1rem; color: #dc2626; margin-top: 10px;
+            display: none; text-align: center;
+        }
+        .err.show { display: block; }
+
+        /* ── DONE SCREEN ── */
+        .done-emoji { font-size: 4rem; margin-bottom: 16px; animation: pop 0.5s cubic-bezier(.175,.885,.32,1.275); }
+        @keyframes pop { from{transform:scale(0)} to{transform:scale(1)} }
+    </style>
+</head>
+<body>
+
+<svg style="display:none">
+    <filter id="rs">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="8"/>
+        <feDisplacementMap in="SourceGraphic" scale="2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+</svg>
+
+<div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+
+<nav>
+    <a class="logo" href="index.html">kindred</a>
+    <span class="step-counter" id="stepCounter">1 / 4</span>
+</nav>
+
+<!-- SCREEN 1: NAME -->
+<div class="screen active" id="s1">
+    <div class="question">hey, what's your <span class="hl">name?</span></div>
+    <div class="hint">what people call you is a good start ✏️</div>
+    <input class="big-input" id="nameInput" type="text" placeholder="type here…" maxlength="40" autocomplete="off"/>
+    <span class="err" id="nameErr">write something ✏️</span>
+    <button class="next-btn" onclick="go(2)">next →</button>
+</div>
+
+<!-- SCREEN 2: AGE -->
+<div class="screen" id="s2">
+    <div class="question">how <span class="hl">old</span> are you?</div>
+    <div class="hint">between 16 and 30</div>
+    <input class="big-input" id="ageInput" type="number" placeholder="20" min="16" max="30"/>
+    <span class="err" id="ageErr">enter a valid age ✏️</span>
+    <button class="next-btn" onclick="go(3)">next →</button>
+</div>
+
+<!-- SCREEN 3: GENDER -->
+<div class="screen" id="s3">
+    <div class="question">how do you <span class="hl">identify?</span></div>
+    <div class="hint">pick one</div>
+    <div class="tiles">
+        <div class="tile">
+            <input type="radio" name="gender" id="gM" value="Male"/>
+            <label for="gM"><span class="tile-emoji">♂</span> Male</label>
+        </div>
+        <div class="tile">
+            <input type="radio" name="gender" id="gF" value="Female"/>
+            <label for="gF"><span class="tile-emoji">♀</span> Female</label>
+        </div>
+        <div class="tile">
+            <input type="radio" name="gender" id="gO" value="Other"/>
+            <label for="gO"><span class="tile-emoji">✦</span> Other</label>
+        </div>
+    </div>
+    <span class="err" id="genderErr">pick one ✏️</span>
+    <button class="next-btn" onclick="go(4)">next →</button>
+</div>
+
+<!-- SCREEN 4: CAMPUS -->
+<div class="screen" id="s4">
+    <div class="question">which <span class="hl">campus</span> are you at?</div>
+    <div class="hint">search or scroll to find yours</div>
+
+    <div class="college-picker">
+        <div class="college-search-wrap">
+            <input class="college-search" id="collegeSearch" type="text" placeholder="search your college…" autocomplete="off"/>
+        </div>
+        <div class="college-list" id="collegeList">
+
+            <div class="college-group-label">Vizag · Engineering &amp; Technical</div>
+            <div class="college-item" data-value="AUCE (Andhra University College of Engineering)">AUCE — Andhra University College of Engineering</div>
+            <div class="college-item" data-value="GITAM University (GIMSR / GIT)">GITAM University (GIMSR / GIT)</div>
+            <div class="college-item" data-value="GVPCE (Gayatri Vidya Parishad College of Engineering)">GVPCE — Gayatri Vidya Parishad College of Engineering</div>
+            <div class="college-item" data-value="GVPW (GVP College for Women)">GVPW — GVP College for Women</div>
+            <div class="college-item" data-value="ANITS (Anil Neerukonda Institute of Technology)">ANITS — Anil Neerukonda Institute of Technology</div>
+            <div class="college-item" data-value="Raghu Engineering College / Raghu Institute of Technology">Raghu Engineering College / Raghu Institute of Technology</div>
+            <div class="college-item" data-value="Vignan's Institute (VIIT - Duvvada)">Vignan's Institute — VIIT, Duvvada</div>
+            <div class="college-item" data-value="Vignan's Institute (VIEW - Gajuwaka)">Vignan's Institute — VIEW, Gajuwaka</div>
+            <div class="college-item" data-value="NSRIT (Nadirshah Rashid Institute of Technology)">NSRIT — Nadirshah Rashid Institute of Technology</div>
+            <div class="college-item" data-value="Sanketika Vidya Parishad / Sanketika Institute of Technology">Sanketika Vidya Parishad / Sanketika Institute of Technology</div>
+            <div class="college-item" data-value="Pydah College of Engineering">Pydah College of Engineering</div>
+            <div class="college-item" data-value="Chaitanya Engineering College">Chaitanya Engineering College</div>
+            <div class="college-item" data-value="Aditya Institute of Technology">Aditya Institute of Technology</div>
+            <div class="college-item" data-value="Lendi Institute of Engineering (Jonnada)">Lendi Institute of Engineering — Jonnada</div>
+            <div class="college-item" data-value="Vizag Institute of Technology (VIT)">Vizag Institute of Technology (VIT)</div>
+
+            <div class="college-group-label">Vizag · Degree &amp; Post-Graduate</div>
+            <div class="college-item" data-value="Bullayya College">Bullayya College</div>
+            <div class="college-item" data-value="Dr. L.B. College">Dr. L.B. College</div>
+            <div class="college-item" data-value="Mrs. AVN College">Mrs. AVN College</div>
+            <div class="college-item" data-value="St. Joseph's Women's College">St. Joseph's Women's College</div>
+            <div class="college-item" data-value="Samata College">Samata College</div>
+            <div class="college-item" data-value="Aditya Degree College">Aditya Degree College</div>
+            <div class="college-item" data-value="Prism Degree College">Prism Degree College</div>
+            <div class="college-item" data-value="BVK College">BVK College</div>
+
+            <div class="college-group-label">Vizag · Intermediate / Junior Colleges</div>
+            <div class="college-item" data-value="Sri Chaitanya Junior College (Vizag)">Sri Chaitanya Junior College — Vizag</div>
+            <div class="college-item" data-value="Narayana Junior College (Vizag)">Narayana Junior College — Vizag</div>
+            <div class="college-item" data-value="GVP Junior College">GVP Junior College</div>
+            <div class="college-item" data-value="Govt. Junior College (CP / Gnanapuram / VSP)">Govt. Junior College (CP / Gnanapuram / VSP)</div>
+            <div class="college-item" data-value="Tirumala Junior College">Tirumala Junior College</div>
+
+            <div class="college-group-label">Anakapalli · Engineering &amp; Technical</div>
+            <div class="college-item" data-value="DIET (Dadi Institute of Engineering & Technology)">DIET — Dadi Institute of Engineering &amp; Technology</div>
+            <div class="college-item" data-value="Avanthi Institute of Engineering and Technology">Avanthi Institute of Engineering and Technology</div>
+            <div class="college-item" data-value="Sanketika Institute of Technology (AKP Branch)">Sanketika Institute of Technology — AKP Branch</div>
+            <div class="college-item" data-value="ASK College of Technology and Management – Anakapalle">ASK College of Technology and Management – Anakapalle</div>
+
+            <div class="college-group-label">Anakapalli · Degree &amp; Intermediate</div>
+            <div class="college-item" data-value="AMAL College">AMAL College</div>
+            <div class="college-item" data-value="Gowri Degree & Junior College">Gowri Degree &amp; Junior College</div>
+            <div class="college-item" data-value="Sri Shiridi Sai Degree College">Sri Shiridi Sai Degree College</div>
+            <div class="college-item" data-value="Vignan Junior College (AKP)">Vignan Junior College — AKP</div>
+            <div class="college-item" data-value="Sri Chaitanya (AKP Branch)">Sri Chaitanya — AKP Branch</div>
+            <div class="college-item" data-value="Narayana (AKP Branch)">Narayana — AKP Branch</div>
+            <div class="college-item" data-value="Government Degree College (Anakapalli)">Government Degree College — Anakapalli</div>
+            <div class="college-item" data-value="AS Raja College">AS Raja College</div>
+
+            <div class="college-no-result" id="noResult">no college found 🤔</div>
+        </div>
+    </div>
+
+    <input type="hidden" id="collegeSelect"/>
+    <span class="err" id="collegeErr">pick your college ✏️</span>
+    <button class="next-btn" onclick="finish()">let's go ♥</button>
+</div>
+
+<!-- SCREEN 5: DONE -->
+<div class="screen" id="s5">
+    <div class="done-emoji">🎉</div>
+    <div class="question">you're in, <span class="hl" id="doneNameSpan">—</span>!</div>
+    <div class="hint" style="margin-top:10px">taking you to your matches ♥</div>
+</div>
+
+<script>
+    let current = 1;
+    const total = 4;
+
+    function updateUI(n) {
+        document.getElementById('stepCounter').textContent = Math.min(n, total) + ' / ' + total;
+        document.getElementById('progFill').style.width = ((Math.min(n, total) - 1) / total * 100) + '%';
+    }
+
+    function go(n) {
+        // validate current
+        if (current === 1) {
+            const v = document.getElementById('nameInput').value.trim();
+            if (!v) { document.getElementById('nameErr').classList.add('show'); return; }
+            document.getElementById('nameErr').classList.remove('show');
+        }
+        if (current === 2) {
+            const a = parseInt(document.getElementById('ageInput').value);
+            if (!(a >= 16 && a <= 30)) { document.getElementById('ageErr').classList.add('show'); return; }
+            document.getElementById('ageErr').classList.remove('show');
+        }
+        if (current === 3) {
+            if (!document.querySelector('input[name="gender"]:checked')) {
+                document.getElementById('genderErr').classList.add('show'); return;
+            }
+            document.getElementById('genderErr').classList.remove('show');
+        }
+
+        // animate out
+        const cur = document.getElementById('s' + current);
+        cur.classList.add('exit-up');
+        setTimeout(() => {
+            cur.classList.remove('active', 'exit-up');
+            current = n;
+            const next = document.getElementById('s' + current);
+            next.classList.add('active');
+            updateUI(current);
+            // autofocus text inputs
+            const inp = next.querySelector('.big-input');
+            if (inp) setTimeout(() => inp.focus(), 420);
+        }, 300);
+    }
+
+    function finish() {
+        const col = document.getElementById('collegeSelect').value;
+        if (!col) { document.getElementById('collegeErr').classList.add('show'); return; }
+        document.getElementById('collegeErr').classList.remove('show');
+
+        const name = document.getElementById('nameInput').value.trim();
+        const profile = {
+            name,
+            age: parseInt(document.getElementById('ageInput').value),
+            gender: document.querySelector('input[name="gender"]:checked').value,
+            college: col,
+            avatar_color: '#fb923c',
+        };
+
+        // save immediately
+        sessionStorage.setItem('kindredProfile', JSON.stringify(profile));
+
+        // show done screen
+        const cur = document.getElementById('s' + current);
+        cur.classList.add('exit-up');
+        setTimeout(() => {
+            cur.classList.remove('active','exit-up');
+            document.getElementById('s5').classList.add('active');
+            document.getElementById('doneNameSpan').textContent = name;
+            document.getElementById('progFill').style.width = '100%';
+            document.getElementById('stepCounter').textContent = '✓';
+        }, 300);
+
+        // fire-and-forget Supabase insert
+        try {
+            sb.from('profiles').insert([profile]).then(({ error }) => {
+                if (error) {
+                    console.error('Supabase insert failed:', error.message, error.details, error.hint);
+                    alert('Supabase error: ' + error.message);
+                } else {
+                    console.log('Supabase insert OK');
+                }
+            });
+        } catch(e) { console.warn('Supabase:', e); }
+
+        // redirect after 1.2s no matter what
+        setTimeout(() => { window.location.href = 'matches.html'; }, 1200);
+    }
+
+    // college search filter
+    document.getElementById('collegeSearch').addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        const items = document.querySelectorAll('.college-item');
+        const groups = document.querySelectorAll('.college-group-label');
+        let anyVisible = false;
+        items.forEach(item => {
+            const match = item.textContent.toLowerCase().includes(q);
+            item.classList.toggle('hidden', !match);
+            if (match) anyVisible = true;
+        });
+        groups.forEach(group => {
+            let next = group.nextElementSibling;
+            let hasVisible = false;
+            while (next && !next.classList.contains('college-group-label')) {
+                if (!next.classList.contains('hidden') && next.classList.contains('college-item')) hasVisible = true;
+                next = next.nextElementSibling;
+            }
+            group.style.display = hasVisible ? '' : 'none';
+        });
+        document.getElementById('noResult').style.display = anyVisible ? 'none' : 'block';
+    });
+
+    // college item click
+    document.querySelectorAll('.college-item').forEach(item => {
+        item.addEventListener('click', function() {
+            document.querySelectorAll('.college-item').forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('collegeSelect').value = this.dataset.value;
+            document.getElementById('collegeErr').classList.remove('show');
+        });
+    });
+
+    // enter key advances
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        if (current === 1 || current === 2) go(current + 1);
+        if (current === 3) go(4);
+        if (current === 4) finish();
+    });
+
+    // auto-advance gender on pick
+    document.querySelectorAll('input[name="gender"]').forEach(r => {
+        r.addEventListener('change', () => setTimeout(() => go(4), 350));
+    });
+
+    updateUI(1);
+    setTimeout(() => document.getElementById('nameInput').focus(), 100);
+</script>
+</body>
+</html>
