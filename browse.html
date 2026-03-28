@@ -190,17 +190,44 @@
             .modal-img { aspect-ratio: 16/9; }
         }
         @media (max-width: 540px) {
-            .nav-links { display: none; }
             .result-count { display: none; }
             .profiles-grid { grid-template-columns: repeat(2, 1fr); }
+            .nav-desktop { display: none !important; }
+            .nav-hamburger { display: flex !important; }
         }
+
+        /* HAMBURGER MENU */
+        .nav-hamburger {
+            display: none; position: relative; align-items: center; gap: 10px;
+        }
+        .hamburger-btn {
+            background: none; border: 1px solid var(--border); padding: 7px 10px;
+            cursor: pointer; color: var(--text); display: flex; align-items: center;
+            font-family: var(--mono);
+        }
+        .hamburger-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .hamburger-menu {
+            position: absolute; top: calc(100% + 10px); right: 0;
+            background: var(--bg); border: 1px solid var(--border);
+            display: none; flex-direction: column; min-width: 180px; z-index: 9999;
+        }
+        .hamburger-menu.open { display: flex; }
+        .hamburger-menu a {
+            padding: 13px 18px; font-size: 11px; font-weight: 600;
+            color: var(--text); text-decoration: none; letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+        .hamburger-menu a:last-child { border-bottom: none; }
+        .hamburger-menu a:hover { color: var(--accent); background: #f1f1ee; }
     </style>
 </head>
 <body>
 
 <nav>
     <a href="index.html" class="nav-logo" data-tip="Back to home">NAPKIN</a>
-    <div style="display:flex;align-items:center;gap:12px;">
+
+    <!-- DESKTOP NAV -->
+    <div class="nav-desktop" style="display:flex;align-items:center;gap:12px;">
         <a href="matches.html" class="nav-cta" id="nav-matches" style="display:none;" data-tip="View your matches">MY_MATCHES →</a>
         <a href="likes.html" class="nav-cta" id="nav-likes" style="display:none;" data-tip="Profiles you liked">MY_LIKES →</a>
         <a href="profile.html" class="nav-cta" id="nav-profile" style="display:none;" data-tip="Your profile">MY_PROFILE →</a>
@@ -214,6 +241,27 @@
             </div>
         </div>
         <a href="join.html" class="nav-cta" id="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <div class="nav-hamburger" id="nav-hamburger">
+        <div class="nav-bell" id="nav-bell-mobile" style="display:none;" onclick="toggleNotif(event)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <div class="bell-badge" id="bell-badge-mobile"></div>
+            <div class="notif-dropdown" id="notif-dropdown-mobile" style="right:0;">
+                <div class="notif-header">// NOTIFICATIONS</div>
+                <div id="notif-list-mobile"><div class="notif-empty">NO_NEW_NOTIFICATIONS</div></div>
+            </div>
+        </div>
+        <button class="hamburger-btn" onclick="toggleHamburger(event)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="hamburger-menu" id="hamburger-menu">
+            <a href="matches.html" id="hm-matches" style="display:none;">MY_MATCHES →</a>
+            <a href="likes.html" id="hm-likes" style="display:none;">MY_LIKES →</a>
+            <a href="profile.html" id="hm-profile" style="display:none;">MY_PROFILE →</a>
+            <a href="join.html" id="hm-login">LOGIN / JOIN →</a>
+        </div>
     </div>
 </nav>
 
@@ -291,6 +339,12 @@
         document.getElementById('nav-likes').style.display = 'inline-block';
         document.getElementById('nav-profile').style.display = 'inline-block';
         document.getElementById('nav-bell').style.display = 'block';
+        // mobile
+        document.getElementById('nav-bell-mobile').style.display = 'block';
+        document.getElementById('hm-matches').style.display = 'block';
+        document.getElementById('hm-likes').style.display = 'block';
+        document.getElementById('hm-profile').style.display = 'block';
+        document.getElementById('hm-login').style.display = 'none';
         loadProfiles();
         loadNotifications();
         setInterval(loadNotifications, 15000); // poll every 15s
@@ -423,11 +477,23 @@
         setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
     }
 
+    function toggleHamburger(e) {
+        e.stopPropagation();
+        document.getElementById('hamburger-menu').classList.toggle('open');
+    }
+    document.addEventListener('click', () => {
+        document.getElementById('hamburger-menu')?.classList.remove('open');
+        document.getElementById('notif-dropdown')?.classList.remove('open');
+        document.getElementById('notif-dropdown-mobile')?.classList.remove('open');
+    });
+
     function toggleNotif(e) {
         e.stopPropagation();
-        document.getElementById('notif-dropdown').classList.toggle('open');
+        // sync both dropdowns
+        const isMobile = e.currentTarget.id === 'nav-bell-mobile';
+        const id = isMobile ? 'notif-dropdown-mobile' : 'notif-dropdown';
+        document.getElementById(id).classList.toggle('open');
     }
-    document.addEventListener('click', () => document.getElementById('notif-dropdown')?.classList.remove('open'));
 
     function timeAgo(iso) {
         const diff = Date.now() - new Date(iso).getTime();
@@ -503,14 +569,21 @@
         if (notifs.length > 0) {
             badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
             badge.classList.add('show');
-            list.innerHTML = notifs.map(n => `
+            const html = notifs.map(n => `
                 <div class="notif-item" onclick="window.location.href='${n.href}'">
                     <div>${n.text}</div>
                     <div class="notif-time">${timeAgo(n.time)}</div>
                 </div>`).join('');
+            list.innerHTML = html;
+            // sync mobile
+            document.getElementById('bell-badge-mobile').textContent = badge.textContent;
+            document.getElementById('bell-badge-mobile').classList.add('show');
+            document.getElementById('notif-list-mobile').innerHTML = html;
         } else {
             badge.classList.remove('show');
+            document.getElementById('bell-badge-mobile').classList.remove('show');
             list.innerHTML = '<div class="notif-empty">NO_NEW_NOTIFICATIONS</div>';
+            document.getElementById('notif-list-mobile').innerHTML = '<div class="notif-empty">NO_NEW_NOTIFICATIONS</div>';
         }
     }
 
