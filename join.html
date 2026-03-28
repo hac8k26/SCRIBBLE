@@ -357,9 +357,19 @@
             return;
         }
 
-        // 2. Save profile to profiles table
+        // 2. Sign in immediately to get a valid session
+        const { data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (signInErr) {
+            errEl.innerHTML = signInErr.message;
+            errEl.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = '$ JOIN_NAPKIN →';
+            return;
+        }
+
+        // 3. Save profile to profiles table
         const { error: dbErr } = await sb.from('profiles').insert({
-            id: authData.user.id,
+            id: signInData.user.id,
             name, age, college, email
         });
 

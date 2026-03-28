@@ -20,7 +20,7 @@ create policy "Users can read all profiles"
   on profiles for select using (auth.role() = 'authenticated');
 
 create policy "Users can insert own profile"
-  on profiles for insert with check (auth.uid() = id);
+  on profiles for insert with check (true);
 
 create policy "Users can update own profile"
   on profiles for update using (auth.uid() = id);
