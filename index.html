@@ -494,23 +494,27 @@
         document.addEventListener('scroll', () => tip.classList.remove('show'), true);
     })();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-    const { Client, Account } = Appwrite;
-    const _client = new Client()
-        .setEndpoint('https://fra.cloud.appwrite.io/v1')
-        .setProject('69c764d8003a944c2295');
-    const _account = new Account(_client);
+    const { createClient } = supabase;
+    const _sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
 
-    _account.get().then(user => {
-        document.getElementById('btn-login').style.display = 'none';
-        document.getElementById('btn-join').style.display = 'none';
-        const btn = document.getElementById('btn-profile');
-        const name = user.name || user.email.split('@')[0];
-        btn.textContent = '[ ' + name.toUpperCase() + ' ]';
-        btn.style.display = 'inline-block';
-        window._loggedIn = true;
-    }).catch(() => { window._loggedIn = false; });
+    _sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            document.getElementById('btn-login').style.display = 'none';
+            document.getElementById('btn-join').style.display = 'none';
+            const btn = document.getElementById('btn-profile');
+            const name = session.user.user_metadata?.name || session.user.email.split('@')[0];
+            btn.textContent = '[ ' + name.toUpperCase() + ' ]';
+            btn.style.display = 'inline-block';
+            window._loggedIn = true;
+        } else {
+            window._loggedIn = false;
+        }
+    });
 
     function checkAuth(e) {
         if (window._loggedIn) return true;
