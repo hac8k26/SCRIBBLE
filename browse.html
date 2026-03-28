@@ -254,129 +254,129 @@
 
 <script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
 <script>
-    (function(){
-        const { Client, Account } = Appwrite;
-        const client = new Client()
-            .setEndpoint('https://fra.cloud.appwrite.io/v1')
-            .setProject('69c764d8003a944c2295');
-        new Account(client).get().catch(() => {
-            document.getElementById('auth-gate').classList.add('show');
-        });
-    })();
-</script>
-<script>
-const PROFILES = [
-    { id:1, name:'alex_k', age:27, city:'Berlin', job:'Software Engineer', looking:'Relationship', tags:['tech','music','cycling'], bio:'OSS contributor by day, vinyl collector by night. Looking for someone to explore record shops and hackathons with.', seed:64, online:true, college:'GITAM University' },
-    { id:2, name:'sam_r', age:24, city:'London', job:'Graphic Designer', looking:'Friendship', tags:['art','music','travel'], bio:'I design things and then immediately redesign them. Love gallery openings, good coffee, and spontaneous weekend trips.', seed:91, online:false, college:'GVPW (GVP College for Women)' },
-    { id:3, name:'jordan_m', age:29, city:'NYC', job:'Musician', looking:'Relationship', tags:['music','art','food'], bio:'Session guitarist and amateur chef. If you can appreciate a good riff and a good risotto, we\'ll get along fine.', seed:33, online:true, college:'AUCE (Andhra University)' },
-    { id:4, name:'riley_t', age:26, city:'Amsterdam', job:'Data Scientist', looking:'Casual', tags:['tech','fitness','books'], bio:'I run models and marathons. Currently reading everything by Ursula K. Le Guin. Probably overthinking this bio.', seed:150, online:true, college:'ANITS' },
-    { id:5, name:'casey_l', age:31, city:'Tokyo', job:'Architect', looking:'Relationship', tags:['art','travel','food'], bio:'Designing buildings and eating my way through every city I visit. Fluent in Japanese, sarcasm, and AutoCAD.', seed:200, online:false, college:'Bullayya College' },
-    { id:6, name:'morgan_p', age:25, city:'Paris', job:'Photographer', looking:'Friendship', tags:['art','travel','music'], bio:'Street photographer. I see the world in 35mm. Looking for people who notice the small things.', seed:77, online:true, college:'Mrs. AVN College' },
-    { id:7, name:'drew_s', age:28, city:'Toronto', job:'Game Developer', looking:'Relationship', tags:['gaming','tech','music'], bio:'I make games and play too many of them. Also into tabletop RPGs and lo-fi beats. Let\'s co-op something.', seed:120, online:false, college:'GVPCE' },
-    { id:8, name:'avery_n', age:23, city:'Melbourne', job:'Barista / Writer', looking:'Casual', tags:['food','books','art'], bio:'Writing a novel one espresso at a time. I\'ll talk about books, coffee, and the meaning of life — in that order.', seed:55, online:true, college:'St. Joseph\'s Women\'s College' },
-    { id:9, name:'quinn_b', age:32, city:'Barcelona', job:'Yoga Instructor', looking:'Relationship', tags:['fitness','travel','food'], bio:'I teach yoga, grow herbs on my balcony, and believe in slow mornings. Looking for someone who isn\'t always in a rush.', seed:180, online:false, college:'Raghu Engineering College' },
-    { id:10, name:'taylor_v', age:27, city:'Seoul', job:'UX Designer', looking:'Friendship', tags:['tech','art','gaming'], bio:'I design interfaces and break them to see what happens. Big fan of K-indie music and late-night ramen runs.', seed:99, online:true, college:'DIET (Dadi Institute)' },
-    { id:11, name:'blake_o', age:30, city:'Chicago', job:'Chef', looking:'Relationship', tags:['food','music','fitness'], bio:'Professional chef, amateur runner. I\'ll cook for you on the third date. Maybe the second if you\'re interesting.', seed:210, online:false, college:'Vignan\'s Institute (VIIT)' },
-    { id:12, name:'skyler_h', age:26, city:'Lisbon', job:'Freelance Dev', looking:'Casual', tags:['tech','travel','books'], bio:'Remote worker, full-time wanderer. Currently based in Lisbon, next month who knows. Looking for good conversations.', seed:44, online:true, college:'Pydah College of Engineering' },
-];
+    const { Client, Account, Databases, Query } = Appwrite;
+    const client = new Client()
+        .setEndpoint('https://fra.cloud.appwrite.io/v1')
+        .setProject('69c764d8003a944c2295');
+    const account = new Account(client);
+    const databases = new Databases(client);
 
-let activeFilter = 'all';
-let activeProfile = null;
+    const DB_ID  = '69c7742c000819452b70';
+    const COL_ID = 'profiles';
 
-function renderProfiles(list) {
-    const grid = document.getElementById('profiles-grid');
-    document.getElementById('result-count').textContent = `${list.length}_PROFILES`;
-    grid.innerHTML = '';
-    list.forEach(p => {
-        const card = document.createElement('div');
-        card.className = 'profile-card';
-        card.innerHTML = `
-            <div class="card-left">
-                <div class="card-name">${p.name}</div>
-                <div class="card-age">AGE · ${p.age}</div>
-                <div class="card-college">${p.college}</div>
-            </div>
-            <div class="card-avatar">
-                <img src="https://picsum.photos/seed/${p.seed}/80/80" loading="lazy" alt="">
-                ${p.online ? '<div class="card-online"></div>' : ''}
-            </div>`;
-        card.addEventListener('click', () => openModal(p.id));
-        grid.appendChild(card);
+    let currentUser = null;
+    let PROFILES = [];
+    let activeFilter = 'all';
+    let activeProfile = null;
+
+    // Auth check + load profiles
+    account.get().then(user => {
+        currentUser = user;
+        loadProfiles();
+    }).catch(() => {
+        document.getElementById('auth-gate').classList.add('show');
     });
-}
 
-function setFilter(f, btn) {
-    activeFilter = f;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    filterProfiles();
-}
-
-function filterProfiles() {
-    const q = document.getElementById('search-input').value.toLowerCase();
-    let list = PROFILES;
-    if (activeFilter !== 'all') list = list.filter(p => p.tags.includes(activeFilter));
-    if (q) list = list.filter(p => p.name.includes(q) || p.city.toLowerCase().includes(q) || p.tags.some(t => t.includes(q)));
-    renderProfiles(list);
-}
-
-function openModal(id) {
-    const p = PROFILES.find(x => x.id === id);
-    if (!p) return;
-    activeProfile = p;
-    document.getElementById('modal-img').src = `https://picsum.photos/seed/${p.seed}/400/600`;
-    document.getElementById('modal-name').textContent = p.name;
-    document.getElementById('modal-meta').innerHTML = `AGE: ${p.age}<br>CITY: ${p.city}<br>JOB: ${p.job.toUpperCase()}<br>LOOKING_FOR: ${p.looking.toUpperCase()}`;
-    document.getElementById('modal-bio').textContent = p.bio;
-    document.getElementById('modal-tags').innerHTML = p.tags.map(t => `<span class="modal-tag">${t.toUpperCase()}</span>`).join('');
-    document.getElementById('modal').classList.add('open');
-}
-
-function closeModal(e, force) {
-    if (force || (e && e.target === document.getElementById('modal'))) {
-        document.getElementById('modal').classList.remove('open');
+    async function loadProfiles() {
+        document.getElementById('result-count').textContent = 'LOADING...';
+        try {
+            const res = await databases.listDocuments(DB_ID, COL_ID, [Query.limit(100)]);
+            // exclude own profile
+            PROFILES = res.documents.filter(d => d.userId !== currentUser.$id);
+            renderProfiles(PROFILES);
+        } catch (err) {
+            document.getElementById('result-count').textContent = 'ERROR';
+            console.error(err);
+        }
     }
-}
 
-function likeProfile() {
-    document.getElementById('modal').classList.remove('open');
-    showMatchToast();
-}
+    function renderProfiles(list) {
+        const grid = document.getElementById('profiles-grid');
+        document.getElementById('result-count').textContent = `${list.length}_PROFILES`;
+        grid.innerHTML = '';
+        if (list.length === 0) {
+            grid.innerHTML = '<div style="padding:40px;font-size:11px;color:var(--secondary);grid-column:1/-1;">NO_PROFILES_FOUND</div>';
+            return;
+        }
+        list.forEach(p => {
+            const seed = Math.abs(p.$id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+            const card = document.createElement('div');
+            card.className = 'profile-card';
+            card.innerHTML = `
+                <div class="card-left">
+                    <div class="card-name">${p.name}</div>
+                    <div class="card-age">AGE · ${p.age}</div>
+                    <div class="card-college">${p.college || '—'}</div>
+                </div>
+                <div class="card-avatar">
+                    <img src="https://picsum.photos/seed/${seed}/80/80" loading="lazy" alt="">
+                </div>`;
+            card.addEventListener('click', () => openModal(p));
+            grid.appendChild(card);
+        });
+    }
 
-function quickLike(id) { showMatchToast(); }
+    function setFilter(f, btn) {
+        activeFilter = f;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        filterProfiles();
+    }
 
-function showMatchToast() {
-    // 30% chance of "match" for demo
-    if (Math.random() < 0.3) {
+    function filterProfiles() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        let list = PROFILES;
+        if (q) list = list.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            (p.college && p.college.toLowerCase().includes(q))
+        );
+        renderProfiles(list);
+    }
+
+    function openModal(p) {
+        activeProfile = p;
+        const seed = Math.abs(p.$id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+        document.getElementById('modal-img').src = `https://picsum.photos/seed/${seed}/400/600`;
+        document.getElementById('modal-name').textContent = p.name;
+        document.getElementById('modal-meta').innerHTML = `AGE: ${p.age}<br>COLLEGE: ${p.college || '—'}`;
+        document.getElementById('modal-bio').textContent = p.bio || '';
+        document.getElementById('modal-tags').innerHTML = '';
+        document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal(e, force) {
+        if (force || (e && e.target === document.getElementById('modal'))) {
+            document.getElementById('modal').classList.remove('open');
+        }
+    }
+
+    function likeProfile() {
+        document.getElementById('modal').classList.remove('open');
         const toast = document.getElementById('match-toast');
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
-}
 
-// Tooltip
-(function(){
-    const tip = document.getElementById('tip');
-    let cur = null;
-    document.addEventListener('mouseover', e => {
-        const el = e.target.closest('[data-tip]');
-        if (!el) return;
-        cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show');
-    });
-    document.addEventListener('mouseout', e => {
-        if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; }
-    });
-    document.addEventListener('mousemove', e => {
-        if (!cur) return;
-        const x = e.clientX + 14, y = e.clientY + 14;
-        tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
-        tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
-    });
-    document.addEventListener('scroll', () => tip.classList.remove('show'), true);
-})();
-
-// Init
-renderProfiles(PROFILES);
+    // Tooltip
+    (function(){
+        const tip = document.getElementById('tip');
+        let cur = null;
+        document.addEventListener('mouseover', e => {
+            const el = e.target.closest('[data-tip]');
+            if (!el) return;
+            cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show');
+        });
+        document.addEventListener('mouseout', e => {
+            if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; }
+        });
+        document.addEventListener('mousemove', e => {
+            if (!cur) return;
+            const x = e.clientX + 14, y = e.clientY + 14;
+            tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+            tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+        });
+        document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+    })();
 </script>
 </body>
 </html>
