@@ -344,8 +344,8 @@
         errEl.style.display = 'none';
 
         // 1. Create account  2. Login  3. Save profile to database
-        account.create(ID.unique(), email, pass, name)
-            .then(() => account.createEmailPasswordSession(email, pass))
+        account.create({ userId: ID.unique(), email, password: pass, name })
+            .then(() => account.createEmailPasswordSession({ email, password: pass }))
             .then(() => account.get())
             .then(user => databases.createDocument(DB_ID, COL_ID, ID.unique(), {
                 userId:  user.$id,
@@ -363,7 +363,10 @@
                 window.scrollTo(0, 0);
             })
             .catch(err => {
-                errEl.textContent = err.message || 'SIGNUP_FAILED — try again.';
+                const isConflict = err.code === 409 || err.code === '409' || (err.message && err.message.toLowerCase().includes('already exists'));
+                errEl.innerHTML = isConflict
+                    ? 'ACCOUNT_EXISTS — <a href="auth.html" style="color:var(--accent);text-decoration:none;font-weight:600;">LOGIN_INSTEAD →</a>'
+                    : (err.message || 'SIGNUP_FAILED — try again.');
                 errEl.style.display = 'block';
                 submitBtn.disabled = false;
                 submitBtn.textContent = '$ JOIN_NAPKIN →';
