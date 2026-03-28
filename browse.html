@@ -26,6 +26,36 @@
         .nav-cta { padding: 8px 18px; border: 1px solid var(--text); background: none; font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text); text-decoration: none; }
         .nav-cta:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
 
+        /* NOTIFICATION BELL */
+        .nav-bell { position: relative; display: none; cursor: pointer; text-decoration: none; color: var(--text); padding: 6px; }
+        .nav-bell svg { display: block; }
+        .nav-bell:hover svg { color: var(--accent); }
+        .bell-badge {
+            position: absolute; top: 0; right: 0;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            font-size: 8px; font-weight: 600;
+            display: none; align-items: center; justify-content: center;
+            font-family: var(--mono);
+        }
+        .bell-badge.show { display: flex; }
+
+        /* NOTIFICATION DROPDOWN */
+        .notif-dropdown {
+            position: absolute; top: calc(100% + 10px); right: 0;
+            width: 300px; background: var(--bg); border: 1px solid var(--border);
+            z-index: 9999; display: none; flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .notif-dropdown.open { display: flex; }
+        .notif-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 9px; color: var(--accent); letter-spacing: 0.12em; }
+        .notif-item { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.6; cursor: pointer; }
+        .notif-item:hover { background: #f1f1ee; }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item .notif-name { font-weight: 600; color: var(--accent); }
+        .notif-item .notif-time { font-size: 8px; color: var(--secondary); margin-top: 2px; }
+        .notif-empty { padding: 20px 16px; font-size: 10px; color: var(--secondary); text-align: center; }
+
         /* TOOLBAR */
         .toolbar {
             width: 100%; border-bottom: 1px solid var(--border);
@@ -158,6 +188,15 @@
     <a href="index.html" class="nav-logo" data-tip="Back to home">NAPKIN</a>
     <div style="display:flex;align-items:center;gap:12px;">
         <a href="matches.html" class="nav-cta" id="nav-matches" style="display:none;" data-tip="View your matches">MY_MATCHES →</a>
+        <!-- NOTIFICATION BELL -->
+        <div class="nav-bell" id="nav-bell" onclick="toggleNotif(event)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <div class="bell-badge" id="bell-badge"></div>
+            <div class="notif-dropdown" id="notif-dropdown">
+                <div class="notif-header">// NOTIFICATIONS</div>
+                <div id="notif-list"><div class="notif-empty">NO_NEW_NOTIFICATIONS</div></div>
+            </div>
+        </div>
         <a href="join.html" class="nav-cta" id="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
     </div>
 </nav>
@@ -233,7 +272,10 @@
         currentUser = session.user;
         document.getElementById('nav-cta').style.display = 'none';
         document.getElementById('nav-matches').style.display = 'inline-block';
+        document.getElementById('nav-bell').style.display = 'block';
         loadProfiles();
+        loadNotifications();
+        setInterval(loadNotifications, 15000); // poll every 15s
     });
 
     async function loadProfiles() {
@@ -344,6 +386,79 @@
         const toast = document.getElementById('match-toast');
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function toggleNotif(e) {
+        e.stopPropagation();
+        document.getElementById('notif-dropdown').classList.toggle('open');
+    }
+    document.addEventListener('click', () => document.getElementById('notif-dropdown')?.classList.remove('open'));
+
+    function timeAgo(iso) {
+        const diff = Date.now() - new Date(iso).getTime();
+        const m = Math.floor(diff / 60000);
+        if (m < 1) return 'just now';
+        if (m < 60) return m + 'm ago';
+        const h = Math.floor(m / 60);
+        if (h < 24) return h + 'h ago';
+        return Math.floor(h / 24) + 'd ago';
+    }
+
+    let _lastChecked = localStorage.getItem('notif_checked') || new Date(0).toISOString();
+
+    async function loadNotifications() {
+        // Get matches where I am user2 (someone messaged me) created after last check
+        const { data: newMatches } = await sb.from('matches')
+            .select('id, user1, profiles!matches_user1_fkey(name), created_at')
+            .eq('user2', currentUser.id)
+            .gt('created_at', _lastChecked);
+
+        // Get new messages in my matches sent by others
+        const { data: myMatches } = await sb.from('matches')
+            .select('id')
+            .or(`user1.eq.${currentUser.id},user2.eq.${currentUser.id}`);
+
+        const matchIds = (myMatches || []).map(m => m.id);
+        let newMessages = [];
+        if (matchIds.length > 0) {
+            const { data } = await sb.from('messages')
+                .select('id, text, sender_id, created_at, match_id, profiles!messages_sender_id_fkey(name)')
+                .in('match_id', matchIds)
+                .neq('sender_id', currentUser.id)
+                .gt('created_at', _lastChecked)
+                .order('created_at', { ascending: false })
+                .limit(10);
+            newMessages = data || [];
+        }
+
+        const notifs = [
+            ...(newMatches || []).map(m => ({
+                text: `<span class="notif-name">${m['profiles!matches_user1_fkey']?.name || 'Someone'}</span> sent you a message`,
+                time: m.created_at,
+                href: 'matches.html'
+            })),
+            ...newMessages.map(msg => ({
+                text: `<span class="notif-name">${msg['profiles!messages_sender_id_fkey']?.name || 'Someone'}</span>: ${msg.text.slice(0, 40)}${msg.text.length > 40 ? '...' : ''}`,
+                time: msg.created_at,
+                href: 'matches.html'
+            }))
+        ].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        const badge = document.getElementById('bell-badge');
+        const list = document.getElementById('notif-list');
+
+        if (notifs.length > 0) {
+            badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
+            badge.classList.add('show');
+            list.innerHTML = notifs.map(n => `
+                <div class="notif-item" onclick="window.location.href='${n.href}'">
+                    <div>${n.text}</div>
+                    <div class="notif-time">${timeAgo(n.time)}</div>
+                </div>`).join('');
+        } else {
+            badge.classList.remove('show');
+            list.innerHTML = '<div class="notif-empty">NO_NEW_NOTIFICATIONS</div>';
+        }
     }
 
     (function(){
