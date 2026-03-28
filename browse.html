@@ -396,11 +396,27 @@
         setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
     }
 
-    function likeProfile() {
-        document.getElementById('modal').classList.remove('open');
+    async function likeProfile() {
+        if (!activeProfile) return;
+        // check if match already exists
+        const { data: existing } = await sb.from('matches')
+            .select('id')
+            .or(`and(user1.eq.${currentUser.id},user2.eq.${activeProfile.id}),and(user1.eq.${activeProfile.id},user2.eq.${currentUser.id})`)
+            .limit(1);
+
+        if (!existing?.length) {
+            await sb.from('matches').insert({
+                user1: currentUser.id,
+                user2: activeProfile.id,
+                last_message: null
+            });
+        }
+
+        closeModal(null, true);
         const toast = document.getElementById('match-toast');
+        toast.textContent = '♥ LIKED — view in likes page';
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3500);
+        setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
     }
 
     function toggleNotif(e) {
