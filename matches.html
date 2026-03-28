@@ -279,12 +279,12 @@
             }
 
             const profileDocs = await databases.listDocuments(DB_ID, COL_PROFILES, [
-                Query.equal('userId', profileIds), Query.limit(50)
+                Query.equal('userID', profileIds), Query.limit(50)
             ]);
 
             MATCHES = allMatches.map(m => {
                 const otherId = m.user1 === currentUser.$id ? m.user2 : m.user1;
-                const profile = profileDocs.documents.find(p => p.userId === otherId) || {};
+                const profile = profileDocs.documents.find(p => p.userID === otherId) || {};
                 const seed = Math.abs((profile.$id || otherId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
                 return {
                     matchId: m.$id,

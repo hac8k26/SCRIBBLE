@@ -348,7 +348,7 @@
             .then(() => account.createEmailPasswordSession(email, pass))
             .then(() => account.get())
             .then(user => databases.createDocument(DB_ID, COL_ID, ID.unique(), {
-                userId:  user.$id,
+                userID:  user.$id,
                 name:    name,
                 age:     parseInt(age),
                 college: college

@@ -245,7 +245,7 @@
         try {
             const res = await databases.listDocuments(DB_ID, COL_ID, [Query.limit(100)]);
             console.log('Total docs from DB:', res.total, res.documents);
-            PROFILES = res.documents.filter(d => d.userId && d.userId !== currentUser.$id);
+            PROFILES = res.documents.filter(d => d.userID && d.userID !== currentUser.$id);
             console.log('After filter (currentUser.$id=' + currentUser.$id + '):', PROFILES.length, PROFILES);
             renderProfiles(PROFILES);
         } catch (err) {
@@ -328,11 +328,11 @@
             // check if match already exists
             const existing = await databases.listDocuments(DB_ID, COL_MATCHES, [
                 Query.equal('user1', currentUser.$id),
-                Query.equal('user2', activeProfile.userId)
+                Query.equal('user2', activeProfile.userID)
             ]);
             const existing2 = existing.total === 0
                 ? await databases.listDocuments(DB_ID, COL_MATCHES, [
-                    Query.equal('user1', activeProfile.userId),
+                    Query.equal('user1', activeProfile.userID),
                     Query.equal('user2', currentUser.$id)
                   ])
                 : existing;
@@ -343,7 +343,7 @@
             } else {
                 const match = await databases.createDocument(DB_ID, COL_MATCHES, ID.unique(), {
                     user1: currentUser.$id,
-                    user2: activeProfile.userId,
+                    user2: activeProfile.userID,
                     lastMessage: text,
                     lastTime: new Date().toISOString()
                 });
