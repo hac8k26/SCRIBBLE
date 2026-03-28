@@ -43,9 +43,16 @@
             width: 72px; height: 72px; border: 1px solid var(--border);
             overflow: hidden; flex-shrink: 0; background: var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; color: var(--secondary);
+            font-size: 24px; color: var(--secondary); position: relative; cursor: pointer;
         }
         .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .avatar-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+            display: none; align-items: center; justify-content: center;
+            font-size: 9px; color: #fff; letter-spacing: 0.08em;
+        }
+        .profile-avatar:hover .avatar-overlay { display: flex; }
+        #avatar-input { display: none; }
         .profile-info { flex: 1; }
         .profile-name { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
         .profile-email { font-size: 10px; color: var(--secondary); letter-spacing: 0.05em; margin-bottom: 8px; }
@@ -171,7 +178,10 @@
     <div class="profile-tag">NAPKIN — YOUR_PROFILE</div>
 
     <div class="profile-card">
-        <div class="profile-avatar" id="profile-avatar">?</div>
+        <div class="profile-avatar" id="profile-avatar" onclick="document.getElementById('avatar-input').click()" data-tip="Click to change photo">
+            <div class="avatar-overlay">CHANGE</div>
+        </div>
+        <input type="file" id="avatar-input" accept="image/*" onchange="uploadAvatar(event)">
         <div class="profile-info">
             <div class="profile-name" id="profile-name">LOADING...</div>
             <div class="profile-email" id="profile-email"></div>
@@ -277,15 +287,24 @@
         document.getElementById('profile-name').textContent = name.toUpperCase();
         document.getElementById('profile-email').textContent = user.email;
         document.getElementById('profile-joined').textContent = 'JOINED · ' + new Date(user.created_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric' }).toUpperCase();
-        document.getElementById('profile-avatar').textContent = name[0].toUpperCase();
         document.getElementById('info-id').textContent = user.id;
         document.getElementById('info-verified').textContent = user.email_confirmed_at ? '✓ YES' : '✗ NO';
         loadProfileData(user.id);
     });
 
+    function setAvatar(url, fallbackLetter) {
+        const el = document.getElementById('profile-avatar');
+        if (url) {
+            el.innerHTML = `<img src="${url}" alt="avatar"><div class="avatar-overlay">CHANGE</div>`;
+        } else {
+            el.innerHTML = `${fallbackLetter}<div class="avatar-overlay">CHANGE</div>`;
+        }
+    }
+
     async function loadProfileData(userId) {
         const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
         if (!data) return;
+        setAvatar(data.avatar_url, (data.name || '?')[0].toUpperCase());
         document.getElementById('view-name').textContent = data.name || '—';
         document.getElementById('view-age').textContent = data.age || '—';
         document.getElementById('view-college').textContent = data.college || '—';
@@ -295,6 +314,23 @@
         document.getElementById('edit-age').value = data.age || '';
         document.getElementById('edit-college').value = data.college || '';
         document.getElementById('edit-bio').value = data.bio || '';
+    }
+
+    async function uploadAvatar(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const { data: { session } } = await sb.auth.getSession();
+        const userId = session.user.id;
+        const ext = file.name.split('.').pop();
+        const path = `${userId}/avatar.${ext}`;
+        const el = document.getElementById('profile-avatar');
+        el.innerHTML = `<span style="font-size:9px;color:var(--secondary);">...</span><div class="avatar-overlay">CHANGE</div>`;
+        const { error } = await sb.storage.from('avatars').upload(path, file, { upsert: true });
+        if (error) { alert('Upload failed: ' + error.message); return; }
+        const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path);
+        await sb.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
+        setAvatar(publicUrl + '?t=' + Date.now(), '');
+        e.target.value = '';
     }
 
     function toggleEdit() {

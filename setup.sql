@@ -11,6 +11,7 @@ create table if not exists profiles (
   college    text,
   email      text,
   bio        text,
+  avatar_url text,
   created_at timestamptz default now()
 );
 

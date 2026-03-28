@@ -370,6 +370,11 @@
         return `<div class="letter-avatar ${cls}">${letter}</div>`;
     }
 
+    function avatarEl(p, cls = '') {
+        if (p.avatar_url) return `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+        return letterAvatar(p.name, cls);
+    }
+
     function renderProfiles(list) {
         const grid = document.getElementById('profiles-grid');
         document.getElementById('result-count').textContent = `${list.length}_PROFILES`;
@@ -387,7 +392,7 @@
                     <div class="card-age">AGE · ${p.age}</div>
                     <div class="card-college">${p.college || '—'}</div>
                 </div>
-                ${letterAvatar(p.name)}`;
+                <div class="card-avatar" style="width:48px;height:48px;overflow:hidden;flex-shrink:0;">${avatarEl(p)}</div>`;
             card.addEventListener('click', () => openModal(p));
             grid.appendChild(card);
         });
@@ -404,7 +409,12 @@
 
     function openModal(p) {
         activeProfile = p;
-        document.getElementById('modal-img-wrap').innerHTML = letterAvatar(p.name, 'lg');
+        const wrap = document.getElementById('modal-img-wrap');
+        if (p.avatar_url) {
+            wrap.innerHTML = `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+        } else {
+            wrap.innerHTML = letterAvatar(p.name, 'lg');
+        }
         document.getElementById('modal-name').textContent = p.name;
         document.getElementById('modal-meta').innerHTML = `AGE: ${p.age}<br>COLLEGE: ${p.college || '—'}`;
         document.getElementById('modal-bio').textContent = p.bio || '';
@@ -489,10 +499,18 @@
 
     function toggleNotif(e) {
         e.stopPropagation();
-        // sync both dropdowns
         const isMobile = e.currentTarget.id === 'nav-bell-mobile';
         const id = isMobile ? 'notif-dropdown-mobile' : 'notif-dropdown';
-        document.getElementById(id).classList.toggle('open');
+        const dropdown = document.getElementById(id);
+        const wasOpen = dropdown.classList.contains('open');
+        dropdown.classList.toggle('open');
+        // mark as seen when opening
+        if (!wasOpen) {
+            _lastChecked = new Date().toISOString();
+            localStorage.setItem('notif_checked', _lastChecked);
+            document.getElementById('bell-badge').classList.remove('show');
+            document.getElementById('bell-badge-mobile').classList.remove('show');
+        }
     }
 
     function timeAgo(iso) {
@@ -505,7 +523,7 @@
         return Math.floor(h / 24) + 'd ago';
     }
 
-    let _lastChecked = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // last 7 days
+    let _lastChecked = localStorage.getItem('notif_checked') || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     async function loadNotifications() {
         const notifs = [];
