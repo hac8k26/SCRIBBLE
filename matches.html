@@ -217,7 +217,7 @@
                     <button class="chat-icon-btn" data-tip="View profile">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </button>
-                    <button class="chat-icon-btn" data-tip="Unmatch">
+                    <button class="chat-icon-btn" data-tip="Unmatch" onclick="confirmUnmatch()">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                 </div>
@@ -237,6 +237,20 @@
 </div>
 
 <div id="tip"></div>
+
+<!-- UNMATCH CONFIRM -->
+<div id="unmatch-dialog" style="position:fixed;inset:0;background:rgba(26,26,24,0.65);z-index:99995;display:none;align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--bg);border:1px solid var(--border);border-left:3px solid #e05c5c;padding:36px 40px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:16px;">
+        <div style="font-size:20px;">✕</div>
+        <div style="font-size:13px;font-weight:600;letter-spacing:0.03em;">UNMATCH</div>
+        <div style="font-size:10px;color:var(--secondary);line-height:1.8;">This will delete the match and all messages. This cannot be undone.</div>
+        <div style="display:flex;gap:8px;">
+            <button onclick="doUnmatch()" style="flex:1;padding:12px;background:#e05c5c;color:#fff;border:none;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;">$ YES_UNMATCH →</button>
+            <button onclick="document.getElementById('unmatch-dialog').style.display='none'" style="flex:1;padding:12px;background:none;color:var(--text);border:1px solid var(--border);font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;">CANCEL</button>
+        </div>
+    </div>
+</div>
+
 <div id="auth-gate">
     <div class="gate-box">
         <div class="gate-icon">⚠</div>
@@ -396,6 +410,25 @@
 
         const m = MATCHES.find(x => x.matchId === activeMatchId);
         if (m) { m.preview = text; document.querySelector(`#mi-${activeMatchId} .match-preview`).textContent = text; }
+    }
+
+    function confirmUnmatch() {
+        if (!activeMatchId) return;
+        document.getElementById('unmatch-dialog').style.display = 'flex';
+    }
+
+    async function doUnmatch() {
+        document.getElementById('unmatch-dialog').style.display = 'none';
+        // delete messages first, then match (cascade should handle it but just in case)
+        await sb.from('messages').delete().eq('match_id', activeMatchId);
+        await sb.from('matches').delete().eq('id', activeMatchId);
+
+        // remove from sidebar
+        MATCHES = MATCHES.filter(m => m.matchId !== activeMatchId);
+        activeMatchId = null;
+        document.getElementById('chat-active').style.display = 'none';
+        document.getElementById('chat-empty').style.display = 'flex';
+        renderSidebar();
     }
 
     function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
