@@ -235,77 +235,49 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-    const { Client, Account, Databases, Query, ID, RealtimeResponseEvent } = Appwrite;
-    const client = new Client()
-        .setEndpoint('https://fra.cloud.appwrite.io/v1')
-        .setProject('69c764d8003a944c2295');
-    const account  = new Account(client);
-    const databases = new Databases(client);
-
-    const DB_ID       = '69c7742c000819452b70';
-    const COL_PROFILES = 'table-profiles';
-    const COL_MATCHES  = 'matches';
-    const COL_MESSAGES = 'messages';
+    const { createClient } = supabase;
+    const sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
 
     let currentUser = null;
     let MATCHES = [];
     let activeMatchId = null;
 
-    // Auth check
-    account.get().then(user => {
-        currentUser = user;
-        document.getElementById('nav-user').textContent = '[ ' + (user.name || user.email) + ' ]';
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (!session) { document.getElementById('auth-gate').classList.add('show'); return; }
+        currentUser = session.user;
+        document.getElementById('nav-user').textContent = '[ ' + (currentUser.user_metadata?.name || currentUser.email) + ' ]';
         loadMatches();
-    }).catch(() => {
-        document.getElementById('auth-gate').classList.add('show');
     });
 
     async function loadMatches() {
-        try {
-            // Get matches where current user is either user1 or user2
-            const [r1, r2] = await Promise.all([
-                databases.listDocuments(DB_ID, COL_MATCHES, [Query.equal('user1', currentUser.$id), Query.limit(50)]),
-                databases.listDocuments(DB_ID, COL_MATCHES, [Query.equal('user2', currentUser.$id), Query.limit(50)])
-            ]);
-            const allMatches = [...r1.documents, ...r2.documents];
+        const { data, error } = await sb.from('matches')
+            .select('*, profiles!matches_user2_fkey(id,name,college), profiles!matches_user1_fkey(id,name,college)')
+            .or(`user1.eq.${currentUser.id},user2.eq.${currentUser.id}`)
+            .order('updated_at', { ascending: false });
 
-            // Get the other user's profile for each match
-            const profileIds = allMatches.map(m => m.user1 === currentUser.$id ? m.user2 : m.user1);
-            if (profileIds.length === 0) {
-                document.getElementById('conv-count').textContent = '0_MATCHES';
-                return;
-            }
+        if (error) { console.error(error); document.getElementById('conv-count').textContent = 'ERROR'; return; }
 
-            const profileDocs = await databases.listDocuments(DB_ID, COL_PROFILES, [
-                Query.equal('userID', profileIds), Query.limit(50)
-            ]);
-
-            MATCHES = allMatches.map(m => {
-                const otherId = m.user1 === currentUser.$id ? m.user2 : m.user1;
-                const profile = profileDocs.documents.find(p => p.userID === otherId) || {};
-                const seed = Math.abs((profile.$id || otherId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
-                return {
-                    matchId: m.$id,
-                    userId: otherId,
-                    name: profile.name || 'unknown',
-                    college: profile.college || '',
-                    seed,
-                    preview: m.lastMessage || 'matched ♥',
-                    lastTime: m.lastTime || m.$createdAt,
-                };
-            });
-
-            renderSidebar();
-        } catch (err) {
-            console.error('loadMatches error:', err);
-            document.getElementById('conv-count').textContent = 'ERROR';
-        }
-    }
-
-    function seed(str) {
-        return Math.abs(str.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+        MATCHES = (data || []).map(m => {
+            const isUser1 = m.user1 === currentUser.id;
+            const profile = isUser1 ? m['profiles!matches_user2_fkey'] : m['profiles!matches_user1_fkey'];
+            const otherId = isUser1 ? m.user2 : m.user1;
+            const seed = Math.abs((otherId || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+            return {
+                matchId: m.id,
+                otherId,
+                name: profile?.name || 'unknown',
+                college: profile?.college || '',
+                seed,
+                preview: m.last_message || 'matched ♥',
+                lastTime: m.updated_at || m.created_at,
+            };
+        });
+        renderSidebar();
     }
 
     function timeAgo(iso) {
@@ -321,26 +293,21 @@
     function renderSidebar() {
         const list = document.getElementById('match-list');
         const scroll = document.getElementById('new-matches-scroll');
-        list.innerHTML = '';
-        scroll.innerHTML = '';
+        list.innerHTML = ''; scroll.innerHTML = '';
         document.getElementById('conv-count').textContent = `${MATCHES.length}_MATCHES`;
 
         MATCHES.forEach(m => {
-            // bubble
             const b = document.createElement('div');
             b.className = 'new-match-bubble';
             b.innerHTML = `<img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""><span>${m.name.split(' ')[0].toLowerCase()}</span>`;
             b.onclick = () => openChat(m.matchId);
             scroll.appendChild(b);
 
-            // list item
             const item = document.createElement('div');
             item.className = 'match-item';
             item.id = `mi-${m.matchId}`;
             item.innerHTML = `
-                <div class="match-avatar">
-                    <img src="https://picsum.photos/seed/${m.seed}/80/80" alt="">
-                </div>
+                <div class="match-avatar"><img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""></div>
                 <div class="match-info">
                     <div class="match-name">${m.name}</div>
                     <div class="match-preview">${m.preview}</div>
@@ -364,43 +331,34 @@
         activeMatchId = matchId;
 
         document.querySelectorAll('.match-item').forEach(el => el.classList.remove('active'));
-        const item = document.getElementById(`mi-${matchId}`);
-        if (item) item.classList.add('active');
+        document.getElementById(`mi-${matchId}`)?.classList.add('active');
 
         document.getElementById('ch-avatar').src = `https://picsum.photos/seed/${m.seed}/80/80`;
         document.getElementById('ch-name').textContent = m.name;
         document.getElementById('ch-status').textContent = m.college || '';
         document.getElementById('ch-banner').style.display = 'none';
-
         document.getElementById('chat-empty').style.display = 'none';
-        const chatActive = document.getElementById('chat-active');
-        chatActive.style.display = 'flex';
+        document.getElementById('chat-active').style.display = 'flex';
 
         const msgs = document.getElementById('ch-messages');
         msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:var(--secondary);padding:20px;">LOADING...</div>';
 
-        try {
-            const res = await databases.listDocuments(DB_ID, COL_MESSAGES, [
-                Query.equal('matchId', matchId),
-                Query.orderAsc('$createdAt'),
-                Query.limit(100)
-            ]);
-            msgs.innerHTML = '';
-            if (res.documents.length === 0) {
-                msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:var(--secondary);margin:auto;padding:32px 0;">No messages yet — say hello!</div>';
-            } else {
-                res.documents.forEach(doc => appendMessage(doc.text, doc.senderId === currentUser.$id, doc.$createdAt));
-                msgs.scrollTop = msgs.scrollHeight;
-            }
-        } catch (err) {
-            msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:#e05c5c;padding:20px;">FAILED_TO_LOAD_MESSAGES</div>';
+        const { data, error } = await sb.from('messages')
+            .select('*')
+            .eq('match_id', matchId)
+            .order('created_at', { ascending: true });
+
+        msgs.innerHTML = '';
+        if (error || !data?.length) {
+            msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:var(--secondary);margin:auto;padding:32px 0;">No messages yet — say hello!</div>';
+        } else {
+            data.forEach(doc => appendMessage(doc.text, doc.sender_id === currentUser.id, doc.created_at));
+            msgs.scrollTop = msgs.scrollHeight;
         }
     }
 
     function appendMessage(text, mine, time) {
         const msgs = document.getElementById('ch-messages');
-        const empty = msgs.querySelector('[data-empty]');
-        if (empty) empty.remove();
         const el = document.createElement('div');
         el.className = `msg ${mine ? 'mine' : 'theirs'}`;
         el.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">${timeAgo(time || new Date().toISOString())}</div>`;
@@ -413,36 +371,17 @@
         const text = input.value.trim();
         if (!text || !activeMatchId) return;
         input.value = '';
-
-        const m = MATCHES.find(x => x.matchId === activeMatchId);
-
-        // optimistic UI
         appendMessage(text, true, new Date().toISOString());
 
-        try {
-            await databases.createDocument(DB_ID, COL_MESSAGES, ID.unique(), {
-                matchId:  activeMatchId,
-                senderId: currentUser.$id,
-                text
-            });
-            // update match preview
-            await databases.updateDocument(DB_ID, COL_MATCHES, activeMatchId, {
-                lastMessage: text,
-                lastTime: new Date().toISOString()
-            });
-            if (m) {
-                m.preview = text;
-                const preview = document.querySelector(`#mi-${activeMatchId} .match-preview`);
-                if (preview) preview.textContent = text;
-            }
-        } catch (err) {
-            console.error('sendMessage error:', err);
-        }
+        await sb.from('messages').insert({ match_id: activeMatchId, sender_id: currentUser.id, text });
+        await sb.from('matches').update({ last_message: text, updated_at: new Date().toISOString() }).eq('id', activeMatchId);
+
+        const m = MATCHES.find(x => x.matchId === activeMatchId);
+        if (m) { m.preview = text; document.querySelector(`#mi-${activeMatchId} .match-preview`).textContent = text; }
     }
 
     function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
 
-    // Tooltip
     (function(){
         const tip = document.getElementById('tip');
         let cur = null;

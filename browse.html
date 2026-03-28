@@ -213,50 +213,38 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-    const { Client, Account, Databases, Query, ID } = Appwrite;
-    const client = new Client()
-        .setEndpoint('https://fra.cloud.appwrite.io/v1')
-        .setProject('69c764d8003a944c2295');
-    const account = new Account(client);
-    const databases = new Databases(client);
-
-    const DB_ID       = '69c7742c000819452b70';
-    const COL_ID      = 'table-profiles';
-    const COL_MATCHES  = 'matches';
-    const COL_MESSAGES = 'messages';
+    const { createClient } = supabase;
+    const sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
 
     let currentUser = null;
     let PROFILES = [];
     let activeProfile = null;
 
-    // Auth check + load profiles
-    account.get().then(user => {
-        currentUser = user;
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (!session) { document.getElementById('auth-gate').classList.add('show'); return; }
+        currentUser = session.user;
         document.getElementById('nav-cta').style.display = 'none';
         loadProfiles();
-    }).catch(() => {
-        document.getElementById('auth-gate').classList.add('show');
     });
 
     async function loadProfiles() {
         document.getElementById('result-count').textContent = 'LOADING...';
-        try {
-            const res = await databases.listDocuments(DB_ID, COL_ID, [Query.limit(100)]);
-            console.log('Total docs from DB:', res.total, res.documents);
-            PROFILES = res.documents.filter(d => d.userID && d.userID !== currentUser.$id);
-            console.log('After filter (currentUser.$id=' + currentUser.$id + '):', PROFILES.length, PROFILES);
-            renderProfiles(PROFILES);
-        } catch (err) {
-            const grid = document.getElementById('profiles-grid');
-            grid.innerHTML = `<div style="padding:40px;font-size:11px;color:#e05c5c;grid-column:1/-1;">
-                ERROR: ${err.message}<br><br>
-                <span style="color:var(--secondary);font-size:10px;">Fix: In Appwrite console → profiles collection → Settings → Permissions → Add role "users" with Read access.</span>
-            </div>`;
+        const { data, error } = await sb.from('profiles')
+            .select('*')
+            .neq('id', currentUser.id);
+        if (error) {
+            document.getElementById('profiles-grid').innerHTML =
+                `<div style="padding:40px;font-size:11px;color:#e05c5c;grid-column:1/-1;">ERROR: ${error.message}</div>`;
             document.getElementById('result-count').textContent = 'ERROR';
-            console.error(err);
+            return;
         }
+        PROFILES = data || [];
+        renderProfiles(PROFILES);
     }
 
     function renderProfiles(list) {
@@ -268,7 +256,7 @@
             return;
         }
         list.forEach(p => {
-            const seed = Math.abs(p.$id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+            const seed = Math.abs(p.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
             const card = document.createElement('div');
             card.className = 'profile-card';
             card.innerHTML = `
@@ -287,8 +275,7 @@
 
     function filterProfiles() {
         const q = document.getElementById('search-input').value.toLowerCase();
-        let list = PROFILES;
-        if (q) list = list.filter(p =>
+        const list = PROFILES.filter(p =>
             p.name.toLowerCase().includes(q) ||
             (p.college && p.college.toLowerCase().includes(q))
         );
@@ -297,7 +284,7 @@
 
     function openModal(p) {
         activeProfile = p;
-        const seed = Math.abs(p.$id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+        const seed = Math.abs(p.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
         document.getElementById('modal-img').src = `https://picsum.photos/seed/${seed}/400/600`;
         document.getElementById('modal-name').textContent = p.name;
         document.getElementById('modal-meta').innerHTML = `AGE: ${p.age}<br>COLLEGE: ${p.college || '—'}`;
@@ -320,52 +307,32 @@
         const btn = document.getElementById('modal-msg-send');
         const text = input.value.trim();
         if (!text || !activeProfile) return;
+        btn.disabled = true; btn.textContent = '...';
 
-        btn.disabled = true;
-        btn.textContent = '...';
+        // check if match exists
+        const { data: existing } = await sb.from('matches')
+            .select('id')
+            .or(`and(user1.eq.${currentUser.id},user2.eq.${activeProfile.id}),and(user1.eq.${activeProfile.id},user2.eq.${currentUser.id})`)
+            .limit(1);
 
-        try {
-            // check if match already exists
-            const existing = await databases.listDocuments(DB_ID, COL_MATCHES, [
-                Query.equal('user1', currentUser.$id),
-                Query.equal('user2', activeProfile.userID)
-            ]);
-            const existing2 = existing.total === 0
-                ? await databases.listDocuments(DB_ID, COL_MATCHES, [
-                    Query.equal('user1', activeProfile.userID),
-                    Query.equal('user2', currentUser.$id)
-                  ])
-                : existing;
-
-            let matchId;
-            if (existing2.total > 0) {
-                matchId = existing2.documents[0].$id;
-            } else {
-                const match = await databases.createDocument(DB_ID, COL_MATCHES, ID.unique(), {
-                    user1: currentUser.$id,
-                    user2: activeProfile.userID,
-                    lastMessage: text,
-                    lastTime: new Date().toISOString()
-                });
-                matchId = match.$id;
-            }
-
-            await databases.createDocument(DB_ID, COL_MESSAGES, ID.unique(), {
-                matchId,
-                senderId: currentUser.$id,
-                text
-            });
-
-            closeModal(null, true);
-            const toast = document.getElementById('match-toast');
-            toast.textContent = '✓ MESSAGE_SENT — view in matches';
-            toast.classList.add('show');
-            setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
-        } catch (err) {
-            console.error(err);
-            btn.disabled = false;
-            btn.textContent = 'SEND →';
+        let matchId;
+        if (existing && existing.length > 0) {
+            matchId = existing[0].id;
+        } else {
+            const { data: newMatch, error } = await sb.from('matches').insert({
+                user1: currentUser.id, user2: activeProfile.id, last_message: text
+            }).select('id').single();
+            if (error) { console.error(error); btn.disabled = false; btn.textContent = 'SEND →'; return; }
+            matchId = newMatch.id;
         }
+
+        await sb.from('messages').insert({ match_id: matchId, sender_id: currentUser.id, text });
+
+        closeModal(null, true);
+        const toast = document.getElementById('match-toast');
+        toast.textContent = '✓ MESSAGE_SENT — view in matches';
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
     }
 
     function likeProfile() {
@@ -375,18 +342,11 @@
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
 
-    // Tooltip
     (function(){
         const tip = document.getElementById('tip');
         let cur = null;
-        document.addEventListener('mouseover', e => {
-            const el = e.target.closest('[data-tip]');
-            if (!el) return;
-            cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show');
-        });
-        document.addEventListener('mouseout', e => {
-            if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; }
-        });
+        document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
+        document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
         document.addEventListener('mousemove', e => {
             if (!cur) return;
             const x = e.clientX + 14, y = e.clientY + 14;

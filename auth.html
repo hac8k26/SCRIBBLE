@@ -147,20 +147,18 @@
 
 <div id="tip"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-    const { Client, Account } = Appwrite;
-
-    const client = new Client()
-        .setEndpoint('https://fra.cloud.appwrite.io/v1')
-        .setProject('69c764d8003a944c2295');
-
-    const account = new Account(client);
+    const { createClient } = supabase;
+    const sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
 
     // Check if already logged in
-    account.get().then(() => {
-        window.location.href = 'profile.html';
-    }).catch(() => {});
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) window.location.href = 'profile.html';
+    });
 
     function setLoading(loading) {
         const btn = document.getElementById('login-btn');
@@ -184,12 +182,12 @@
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
         setLoading(true);
-        try {
-            await account.createEmailPasswordSession(email, password);
-            window.location.href = 'profile.html';
-        } catch (err) {
-            showError('login-error', err.message || 'LOGIN_FAILED — check your credentials.');
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            showError('login-error', error.message || 'LOGIN_FAILED — check your credentials.');
             setLoading(false);
+        } else {
+            window.location.href = 'profile.html';
         }
     }
 

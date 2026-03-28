@@ -295,22 +295,18 @@
 
 <div id="tip"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-    const { Client, Account, Databases, ID } = Appwrite;
-    const client = new Client()
-        .setEndpoint('https://fra.cloud.appwrite.io/v1')
-        .setProject('69c764d8003a944c2295');
-    const account = new Account(client);
-    const databases = new Databases(client);
-
-    const DB_ID  = '69c7742c000819452b70';  // napkin database
-    const COL_ID = 'table-profiles';               // profiles collection
+    const { createClient } = supabase;
+    const sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
 
     // If already logged in, skip to profile
-    account.get().then(() => {
-        window.location.href = 'profile.html';
-    }).catch(() => {});
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) window.location.href = 'profile.html';
+    });
 
     let currentStep = 1;
 
@@ -328,10 +324,10 @@
         window.scrollTo(0, 0);
     }
 
-    function handleFinish(e) {
+    async function handleFinish(e) {
         e.preventDefault();
         const name    = document.getElementById('f-name').value.trim();
-        const age     = document.getElementById('f-age').value.trim();
+        const age     = parseInt(document.getElementById('f-age').value.trim());
         const college = document.getElementById('f-college').value.trim();
         const email   = document.getElementById('f-email').value.trim();
         const pass    = document.getElementById('f-password').value;
@@ -343,39 +339,45 @@
         const errEl = document.getElementById('join-error');
         errEl.style.display = 'none';
 
-        // 1. Create account  2. Login  3. Save profile to database
-        account.create(ID.unique(), email, pass, name)
-            .then(() => account.createEmailPasswordSession(email, pass))
-            .then(() => account.get())
-            .then(user => databases.createDocument(DB_ID, COL_ID, ID.unique(), {
-                userID:  user.$id,
-                name:    name,
-                age:     parseInt(age),
-                college: college
-            }))
-            .then(() => {
-                for (let i = 1; i <= 3; i++) {
-                    document.getElementById(`pip-${i}`).className = 'step-pip done';
-                }
-                document.getElementById('step-3').classList.remove('active');
-                document.getElementById('success-name').textContent = name.split(' ')[0].toLowerCase();
-                document.getElementById('success').classList.add('show');
-                window.scrollTo(0, 0);
-            })
-            .catch(err => {
-                const isConflict = err.code === 409 || err.code === '409' || (err.message && err.message.toLowerCase().includes('already exists'));
-                if (isConflict) {
-                    errEl.innerHTML = '⚠ ACCOUNT_ALREADY_EXISTS — redirecting to login...';
-                    errEl.style.display = 'block';
-                    submitBtn.disabled = true;
-                    setTimeout(() => { window.location.href = 'auth.html'; }, 2500);
-                } else {
-                    errEl.innerHTML = err.message || 'SIGNUP_FAILED — try again.';
-                    errEl.style.display = 'block';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = '$ JOIN_NAPKIN →';
-                }
-            });
+        // 1. Sign up with Supabase Auth
+        const { data: authData, error: authErr } = await sb.auth.signUp({ email, password: pass });
+        if (authErr) {
+            const isConflict = authErr.message.toLowerCase().includes('already registered') || authErr.message.toLowerCase().includes('already exists');
+            if (isConflict) {
+                errEl.innerHTML = '⚠ ACCOUNT_ALREADY_EXISTS — redirecting to login...';
+                errEl.style.display = 'block';
+                submitBtn.disabled = true;
+                setTimeout(() => { window.location.href = 'auth.html'; }, 2500);
+            } else {
+                errEl.innerHTML = authErr.message || 'SIGNUP_FAILED — try again.';
+                errEl.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '$ JOIN_NAPKIN →';
+            }
+            return;
+        }
+
+        // 2. Save profile to profiles table
+        const { error: dbErr } = await sb.from('profiles').insert({
+            id: authData.user.id,
+            name, age, college, email
+        });
+
+        if (dbErr) {
+            errEl.innerHTML = dbErr.message || 'PROFILE_SAVE_FAILED — try again.';
+            errEl.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = '$ JOIN_NAPKIN →';
+            return;
+        }
+
+        for (let i = 1; i <= 3; i++) {
+            document.getElementById(`pip-${i}`).className = 'step-pip done';
+        }
+        document.getElementById('step-3').classList.remove('active');
+        document.getElementById('success-name').textContent = name.split(' ')[0].toLowerCase();
+        document.getElementById('success').classList.add('show');
+        window.scrollTo(0, 0);
     }
 
     // Tooltip

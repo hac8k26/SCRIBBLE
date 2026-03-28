@@ -215,30 +215,28 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-    const { Client, Account } = Appwrite;
-    const client = new Client()
-        .setEndpoint('https://fra.cloud.appwrite.io/v1')
-        .setProject('69c764d8003a944c2295');
-    const account = new Account(client);
+    const { createClient } = supabase;
+    const sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
 
     let _authChecked = false;
 
-    account.get().then(user => {
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (!session) { window.location.href = 'auth.html'; return; }
         window._loggedIn = true;
         _authChecked = true;
-        const name = user.name || user.email.split('@')[0];
+        const user = session.user;
+        const name = user.user_metadata?.name || user.email.split('@')[0];
         document.getElementById('profile-name').textContent = name.toUpperCase();
         document.getElementById('profile-email').textContent = user.email;
-        document.getElementById('profile-joined').textContent = 'JOINED · ' + new Date(user.$createdAt).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric' }).toUpperCase();
+        document.getElementById('profile-joined').textContent = 'JOINED · ' + new Date(user.created_at).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric' }).toUpperCase();
         document.getElementById('profile-avatar').textContent = name[0].toUpperCase();
-        document.getElementById('info-id').textContent = user.$id;
-        document.getElementById('info-verified').textContent = user.emailVerification ? '✓ YES' : '✗ NO';
-    }).catch(() => {
-        window._loggedIn = false;
-        _authChecked = true;
-        window.location.href = 'auth.html';
+        document.getElementById('info-id').textContent = user.id;
+        document.getElementById('info-verified').textContent = user.email_confirmed_at ? '✓ YES' : '✗ NO';
     });
 
     function guardNav(e, el) {
@@ -253,22 +251,22 @@
     }
 
     async function handleLogout() {
-        try {
-            await account.deleteSession('current');
-            window.location.href = 'index.html';
-        } catch(e) {
-            alert('Logout failed: ' + e.message);
-        }
+        const { error } = await sb.auth.signOut();
+        if (error) { alert('Logout failed: ' + error.message); return; }
+        window.location.href = 'index.html';
     }
 
     function confirmDelete() {
         document.getElementById('delete-dialog').classList.add('show');
     }
 
-    function doDelete() {
-        account.delete().then(() => {
-            window.location.href = 'index.html';
-        }).catch(e => alert('Error: ' + e.message));
+    async function doDelete() {
+        // Delete profile row then auth user
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) await sb.from('profiles').delete().eq('id', session.user.id);
+        const { error } = await sb.auth.admin?.deleteUser(session.user.id).catch(() => ({})) || {};
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
     }
 
     (function(){
