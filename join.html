@@ -344,8 +344,8 @@
         errEl.style.display = 'none';
 
         // 1. Create account  2. Login  3. Save profile to database
-        account.create({ userId: ID.unique(), email, password: pass, name })
-            .then(() => account.createEmailPasswordSession({ email, password: pass }))
+        account.create(ID.unique(), email, pass, name)
+            .then(() => account.createEmailPasswordSession(email, pass))
             .then(() => account.get())
             .then(user => databases.createDocument(DB_ID, COL_ID, ID.unique(), {
                 userId:  user.$id,
