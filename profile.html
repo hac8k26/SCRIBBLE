@@ -307,7 +307,7 @@
     async function loadProfileData(userId) {
         const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
         if (!data) return;
-        setAvatar(data.avatar_url, (data.name || '?')[0].toUpperCase());
+        setAvatar(data.avatar_url ? data.avatar_url + (data.avatar_url.includes('?') ? '&r=' : '?r=') + Date.now() : null, (data.name || '?')[0].toUpperCase());
         document.getElementById('view-name').textContent = data.name || '—';
         document.getElementById('view-age').textContent = data.age || '—';
         document.getElementById('view-college').textContent = data.college || '—';
@@ -334,8 +334,9 @@
         const { error } = await sb.storage.from('avatars').upload(path, compressed, { upsert: true, contentType: 'image/webp' });
         if (error) { alert('Upload failed: ' + error.message); return; }
         const { data: { publicUrl } } = sb.storage.from('avatars').getPublicUrl(path);
-        await sb.from('profiles').update({ avatar_url: publicUrl }).eq('id', userId);
-        setAvatar(publicUrl + '?t=' + Date.now(), '');
+        const urlWithBuster = publicUrl + '?t=' + Date.now();
+        await sb.from('profiles').update({ avatar_url: urlWithBuster }).eq('id', userId);
+        setAvatar(urlWithBuster, '');
         e.target.value = '';
     }
 
