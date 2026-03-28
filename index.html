@@ -147,6 +147,22 @@
         #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
         #tip.show { opacity: 1; }
 
+        /* AUTH TOAST */
+        #auth-toast {
+            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: var(--text); color: var(--bg); font-family: var(--mono);
+            font-size: 11px; letter-spacing: 0.06em; padding: 14px 22px;
+            border-left: 3px solid var(--accent); z-index: 99998;
+            display: flex; align-items: center; gap: 14px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            white-space: nowrap;
+        }
+        #auth-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        #auth-toast .toast-icon { color: var(--accent); font-size: 13px; }
+        #auth-toast a { color: var(--accent); text-decoration: none; font-weight: 600; }
+        #auth-toast a:hover { text-decoration: underline; }
+
         /* RESPONSIVE */
         @media (max-width: 900px) {
             nav { padding: 16px 20px; }
@@ -402,6 +418,10 @@
 </footer>
 
 <div id="tip"></div>
+<div id="auth-toast">
+    <span class="toast-icon">⚠</span>
+    <span>You need to <a href="auth.html">join or login</a> before browsing profiles.</span>
+</div>
 
 <script>
     // Terminal live feed
@@ -495,7 +515,10 @@
     function checkAuth(e) {
         if (window._loggedIn) return true;
         e.preventDefault();
-        alert('⚠ You need to join or login before browsing profiles.');
+        const toast = document.getElementById('auth-toast');
+        toast.classList.add('show');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
         return false;
     }
 </script>
