@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAPKIN — My Likes</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f7; --text: #1a1a18; --secondary: #6b6b68;
+            --border: #e5e5e1; --accent: #d97757; --mono: 'IBM Plex Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; }
+
+        nav {
+            width: 100%; padding: 20px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: var(--bg); z-index: 100;
+        }
+        .nav-logo { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-decoration: none; }
+        .nav-links { display: flex; gap: 20px; align-items: center; }
+        .nav-links a { font-size: 11px; color: var(--secondary); text-decoration: none; letter-spacing: 0.05em; }
+        .nav-links a:hover { color: var(--accent); }
+
+        .page-main { max-width: 860px; margin: 0 auto; padding: 48px 40px; }
+
+        .page-tag {
+            font-size: 10px; color: var(--accent); letter-spacing: 0.15em;
+            margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        }
+        .page-tag::before { content: ''; width: 24px; height: 1px; background: var(--accent); display: inline-block; }
+        .page-title { font-size: 26px; font-weight: 600; margin-bottom: 6px; }
+        .page-title span { color: var(--accent); }
+        .page-sub { font-size: 11px; color: var(--secondary); margin-bottom: 36px; line-height: 1.7; }
+
+        /* STATS BAR */
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+            background: var(--border); border: 1px solid var(--border); margin-bottom: 32px;
+        }
+        .stat-box { background: var(--bg); padding: 20px 24px; }
+        .stat-num { font-size: 28px; font-weight: 600; color: var(--accent); }
+        .stat-label { font-size: 9px; color: var(--secondary); letter-spacing: 0.1em; margin-top: 4px; }
+
+        /* LIKES GRID */
+        .likes-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+        .like-card {
+            background: var(--bg); padding: 20px 16px;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            cursor: pointer; transition: background 0.15s; text-align: center;
+        }
+        .like-card:hover { background: #f1f1ee; }
+        .like-avatar {
+            width: 56px; height: 56px;
+            background: var(--text); color: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: 600;
+        }
+        .like-name { font-size: 11px; font-weight: 600; }
+        .like-college { font-size: 8px; color: var(--secondary); letter-spacing: 0.03em; line-height: 1.5; }
+        .like-status {
+            font-size: 8px; letter-spacing: 0.08em; padding: 3px 8px;
+            border: 1px solid var(--border);
+        }
+        .like-status.matched { color: var(--accent); border-color: var(--accent); background: #fdf6f3; }
+        .like-status.pending { color: var(--secondary); }
+
+        .empty-state {
+            grid-column: 1/-1; padding: 60px 20px;
+            text-align: center; color: var(--secondary);
+        }
+        .empty-icon { font-size: 32px; opacity: 0.3; margin-bottom: 12px; }
+        .empty-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+        .empty-sub { font-size: 11px; line-height: 1.7; }
+        .empty-sub a { color: var(--accent); text-decoration: none; }
+
+        /* TOOLTIP */
+        #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
+        #tip.show { opacity: 1; }
+
+        @media (max-width: 700px) {
+            nav { padding: 16px 20px; }
+            .page-main { padding: 32px 20px; }
+            .likes-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-bar { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">NAPKIN</a>
+    <div class="nav-links">
+        <a href="browse.html" data-tip="Browse profiles">BROWSE</a>
+        <a href="matches.html" data-tip="Your matches">MATCHES</a>
+        <a href="profile.html" data-tip="Your profile">PROFILE</a>
+    </div>
+</nav>
+
+<main class="page-main">
+    <div class="page-tag">NAPKIN — ACTIVITY</div>
+    <h1 class="page-title">Profiles you've<br><span>liked.</span></h1>
+    <p class="page-sub">Everyone you've sent a message to. Matched ones are highlighted.</p>
+
+    <div class="stats-bar">
+        <div class="stat-box">
+            <div class="stat-num" id="stat-liked">—</div>
+            <div class="stat-label">PROFILES_LIKED</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num" id="stat-matched">—</div>
+            <div class="stat-label">MATCHED</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-num" id="stat-pending">—</div>
+            <div class="stat-label">AWAITING_REPLY</div>
+        </div>
+    </div>
+
+    <div class="likes-grid" id="likes-grid">
+        <div class="empty-state">
+            <div class="empty-icon">♥</div>
+            <div class="empty-title">LOADING...</div>
+        </div>
+    </div>
+</main>
+
+<div id="tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+    const { createClient } = supabase;
+    const sb = createClient(
+        'https://kjewehpzmusixohhhnuq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqZXdlaHB6bXVzaXhvaGhobnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ4ODgsImV4cCI6MjA5MDI2MDg4OH0.FCxActmtQ9kZt0rP4RvqCrDaXIVAAk8r_4PVLOxIFpA'
+    );
+
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (!session) { window.location.href = 'auth.html'; return; }
+        loadLikes(session.user.id);
+    });
+
+    async function loadLikes(userId) {
+        // matches where I initiated (user1) = profiles I liked
+        const { data: sent } = await sb.from('matches')
+            .select('id, user2, last_message, created_at')
+            .eq('user1', userId);
+
+        // matches where someone liked me back (user2) — to detect mutual matches
+        const { data: received } = await sb.from('matches')
+            .select('user1')
+            .eq('user2', userId);
+
+        const receivedFrom = new Set((received || []).map(r => r.user1));
+
+        if (!sent?.length) {
+            document.getElementById('likes-grid').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">♥</div>
+                    <div class="empty-title">NO_LIKES_YET</div>
+                    <div class="empty-sub">You haven't messaged anyone yet.<br><a href="browse.html">BROWSE_PROFILES →</a></div>
+                </div>`;
+            document.getElementById('stat-liked').textContent = '0';
+            document.getElementById('stat-matched').textContent = '0';
+            document.getElementById('stat-pending').textContent = '0';
+            return;
+        }
+
+        // fetch profiles of people I liked
+        const likedIds = sent.map(m => m.user2);
+        const { data: profiles } = await sb.from('profiles').select('id, name, age, college').in('id', likedIds);
+
+        const matched = sent.filter(m => receivedFrom.has(m.user2)).length;
+        document.getElementById('stat-liked').textContent = sent.length;
+        document.getElementById('stat-matched').textContent = matched;
+        document.getElementById('stat-pending').textContent = sent.length - matched;
+
+        const grid = document.getElementById('likes-grid');
+        grid.innerHTML = '';
+        sent.forEach(m => {
+            const profile = profiles?.find(p => p.id === m.user2) || {};
+            const isMatched = receivedFrom.has(m.user2);
+            const letter = (profile.name || '?')[0].toUpperCase();
+            const card = document.createElement('div');
+            card.className = 'like-card';
+            card.innerHTML = `
+                <div class="like-avatar">${letter}</div>
+                <div>
+                    <div class="like-name">${profile.name || 'unknown'}</div>
+                    <div class="like-college">${profile.college || '—'}</div>
+                </div>
+                <div class="like-status ${isMatched ? 'matched' : 'pending'}">
+                    ${isMatched ? '♥ MATCHED' : '○ PENDING'}
+                </div>`;
+            card.onclick = () => window.location.href = isMatched ? 'matches.html' : 'browse.html';
+            grid.appendChild(card);
+        });
+    }
+
+    (function(){
+        const tip = document.getElementById('tip');
+        let cur = null;
+        document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
+        document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
+        document.addEventListener('mousemove', e => {
+            if (!cur) return;
+            const x = e.clientX + 14, y = e.clientY + 14;
+            tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+            tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+        });
+        document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+    })();
+</script>
+</body>
+</html>
