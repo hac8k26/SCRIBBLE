@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCRIBBLE | Find Matches</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Permanent+Marker&family=Architects+Daughter&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a1a;
+            --paper: #fdfaf0;
+            --marker-red: #d62828;
+            --highlighter: rgba(0,255,157,0.3);
+            --tape-color: rgba(255,255,255,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%;
+            min-height: 100%;
+            font-family: 'Architects Daughter', cursive;
+            color: var(--ink);
+            background: var(--paper);
+            background-image:
+                linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            height: 56px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(253,250,240,0.95);
+            backdrop-filter: blur(4px);
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .logo {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 1.8rem;
+            transform: rotate(-2deg);
+            text-decoration: none;
+            color: var(--ink);
+            line-height: 1;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 12px;
+            background: var(--tape-color);
+            padding: 4px 14px;
+            border: 1px solid #ccc;
+            transform: rotate(1deg);
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--ink);
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active { border-bottom: 2px wavy var(--marker-red); color: var(--marker-red); }
+
+        /* PAGE */
+        .page {
+            padding: 76px 24px 40px;
+        }
+
+        .page-title {
+            font-family: 'Gochi Hand', cursive;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            margin-bottom: 6px;
+        }
+
+        .page-title span { color: var(--marker-red); }
+
+        .page-sub {
+            font-size: 0.85rem;
+            opacity: 0.45;
+            margin-bottom: 28px;
+        }
+
+        /* FILTER BAR */
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+            align-items: center;
+        }
+
+        .filter-bar label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            opacity: 0.6;
+        }
+
+        .filter-bar select,
+        .filter-bar input {
+            padding: 6px 10px;
+            border: 2px solid var(--ink);
+            background: white;
+            font-family: 'Architects Daughter', cursive;
+            font-size: 0.82rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .filter-bar select:focus,
+        .filter-bar input:focus { border-color: var(--marker-red); }
+
+        /* GRID */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+        }
+
+        @media (max-width: 1100px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 860px)  { .grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 600px)  { .grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 380px)  { .grid { grid-template-columns: 1fr; } }
+
+        /* PROFILE CARD — single line horizontal */
+        .card {
+            background: white;
+            border: 2px solid var(--ink);
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .card:nth-child(odd)  { transform: rotate(-0.4deg); }
+        .card:nth-child(even) { transform: rotate(0.3deg); }
+
+        .card:hover {
+            transform: translateY(-3px) rotate(0deg) !important;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        .card-avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            border: 2px solid var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .online-pip {
+            position: absolute;
+            bottom: 1px; right: 1px;
+            width: 9px; height: 9px;
+            background: #22c55e;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-name {
+            font-family: 'Permanent Marker', cursive;
+            font-size: 0.88rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            font-size: 0.7rem;
+            opacity: 0.45;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* REQUEST BTN */
+        .btn-request {
+            flex-shrink: 0;
+            padding: 3px 8px;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 0.72rem;
+            background: var(--ink);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-request:hover { background: var(--marker-red); transform: rotate(1deg); }
+
+        .btn-request.sent {
+            background: #22c55e;
+            cursor: default;
+            transform: none !important;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 28px; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--ink);
+            color: white;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 0.95rem;
+            padding: 9px 22px;
+            z-index: 999;
+            transition: transform 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.green { background: #22c55e; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="logo">SCRIBBLE</a>
+    <div class="nav-links">
+        <a href="manifesto.html">Manifesto</a>
+        <a href="match.html" class="active">Matches</a>
+        <a href="chat.html">Chat 💬</a>
+        <a href="login.html">Login</a>
+    </div>
+</nav>
+
+<div class="page">
+    <h1 class="page-title">Find your <span>match.</span></h1>
+    <p class="page-sub">Browse profiles from your area. Send a request to connect.</p>
+
+    <div class="filter-bar">
+        <label>Filter:</label>
+        <select id="filterCollege" onchange="renderGrid()">
+            <option value="">All Colleges</option>
+        </select>
+        <select id="filterGender" onchange="renderGrid()">
+            <option value="">All Genders</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Non-binary</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search name..." oninput="renderGrid()" />
+    </div>
+
+    <div class="grid" id="grid"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const SUPABASE_URL = 'https://jlncfyucnhefshzmsyvm.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsbmNmeXVjbmhlZnNoem1zeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDAzNDksImV4cCI6MjA5MDE3NjM0OX0.ifGxina78eOSwobNBvreypFZHZ70OVpOKGQHYJOXdSI';
+
+    const HEADERS = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+    };
+
+    const requested = new Set();
+    let allProfiles = [];
+    let ME = null; // current user — first profile for demo
+
+    function avatarLetter(name) {
+        return name ? name.charAt(0).toUpperCase() : '?';
+    }
+
+    async function loadProfiles() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;grid-column:1/-1;padding:20px 0">Loading profiles...</p>';
+
+        // get "me" (first profile — replace with real auth later)
+        const meRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*&limit=1`, { headers: HEADERS });
+        const meData = await meRes.json();
+        if (meData.length) ME = meData[0];
+
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*&order=created_at.desc`, { headers: HEADERS });
+
+        if (!res.ok) {
+            grid.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;grid-column:1/-1;padding:20px 0">Failed to load profiles.</p>';
+            return;
+        }
+
+        allProfiles = await res.json();
+
+        // exclude self
+        if (ME) allProfiles = allProfiles.filter(p => p.id !== ME.id);
+
+        // load already-sent requests
+        if (ME) {
+            const rr = await fetch(`${SUPABASE_URL}/rest/v1/match_requests?from_id=eq.${ME.id}&select=to_id`, { headers: HEADERS });
+            if (rr.ok) {
+                const sent = await rr.json();
+                sent.forEach(r => requested.add(r.to_id));
+            }
+        }
+
+        // populate college filter dynamically
+        const colleges = [...new Set(allProfiles.map(p => p.college).filter(Boolean))].sort();
+        const sel = document.getElementById('filterCollege');
+        sel.innerHTML = '<option value="">All Colleges</option>';
+        colleges.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c; o.textContent = c;
+            sel.appendChild(o);
+        });
+
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const college = document.getElementById('filterCollege').value;
+        const gender  = document.getElementById('filterGender').value;
+        const search  = document.getElementById('filterSearch').value.toLowerCase();
+
+        const filtered = allProfiles.filter(p =>
+            (!college || p.college === college) &&
+            (!gender  || p.gender  === gender)  &&
+            (!search  || (p.name || '').toLowerCase().includes(search))
+        );
+
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+
+        if (!filtered.length) {
+            grid.innerHTML = '<p style="opacity:0.4;font-size:0.9rem;grid-column:1/-1;padding:20px 0">No profiles found.</p>';
+            return;
+        }
+
+        filtered.forEach(p => {
+            const isSent = requested.has(p.id);
+            const card = document.createElement('div');
+            card.className = 'card';
+            const safeId   = (p.id   || '').replace(/'/g, "\\'");
+            const safeName = (p.name || '').replace(/'/g, "\\'");
+            card.innerHTML = `
+                <div class="card-avatar" style="background:${p.avatar_color || '#e0e0e0'}">
+                    <span>${avatarLetter(p.name)}</span>
+                </div>
+                <div class="card-info">
+                    <div class="card-name">${p.name || '—'}, ${p.age || '?'}</div>
+                    <div class="card-meta">${p.college || '—'}</div>
+                </div>
+                <button class="btn-request ${isSent ? 'sent' : ''}"
+                    onclick="sendRequest('${safeId}', '${safeName}', this)">
+                    ${isSent ? '✓' : '💌'}
+                </button>`;
+            grid.appendChild(card);
+        });
+    }
+
+    async function sendRequest(toId, name, btn) {
+        if (requested.has(toId) || !ME) return;
+        requested.add(toId);
+        btn.textContent = '✓';
+        btn.classList.add('sent');
+
+        // 1. Insert match request
+        await fetch(`${SUPABASE_URL}/rest/v1/match_requests`, {
+            method: 'POST',
+            headers: HEADERS,
+            body: JSON.stringify({ from_id: ME.id, to_id: toId, status: 'accepted' })
+        });
+
+        // 2. Auto-create conversation so they appear in chat immediately
+        //    Use consistent ordering so no duplicate convos
+        const [a, b] = [ME.id, toId].sort();
+        const convRes = await fetch(`${SUPABASE_URL}/rest/v1/conversations`, {
+            method: 'POST',
+            headers: { ...HEADERS, 'Prefer': 'return=representation,resolution=ignore-duplicates' },
+            body: JSON.stringify({ profile_a_id: a, profile_b_id: b, last_message: '' })
+        });
+
+        showToast('Matched with ' + name + '! 💌 Go to Chat →', true);
+
+        // after 1.8s redirect to chat
+        setTimeout(() => { window.location.href = 'chat.html'; }, 1800);
+    }
+
+    function showToast(msg, green) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast' + (green ? ' green' : '') + ' show';
+        setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    loadProfiles();
+</script>
+</body>
+</html>
