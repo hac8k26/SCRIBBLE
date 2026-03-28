@@ -137,6 +137,27 @@
         #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
         #tip.show { opacity: 1; }
 
+        /* AUTH GATE */
+        #auth-gate {
+            position: fixed; inset: 0; background: var(--bg); z-index: 99990;
+            display: none; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+        }
+        #auth-gate.show { display: flex; }
+        .gate-box {
+            border: 1px solid var(--border); padding: 40px 48px; max-width: 420px; width: 90%;
+            display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center;
+            border-left: 3px solid var(--accent);
+        }
+        .gate-icon { font-size: 28px; }
+        .gate-title { font-size: 13px; font-weight: 600; letter-spacing: 0.05em; }
+        .gate-sub { font-size: 10px; color: var(--secondary); line-height: 1.8; letter-spacing: 0.04em; }
+        .gate-btn {
+            padding: 12px 28px; background: var(--text); color: var(--bg);
+            border: none; font-family: var(--mono); font-size: 11px; font-weight: 600;
+            cursor: pointer; letter-spacing: 0.05em; text-decoration: none; display: inline-block;
+        }
+        .gate-btn:hover { background: var(--accent); }
+
         @media (max-width: 768px) {
             .app { grid-template-columns: 1fr; }
             .chat-area { display: none; }
@@ -205,6 +226,14 @@
 </div>
 
 <div id="tip"></div>
+<div id="auth-gate">
+    <div class="gate-box">
+        <div class="gate-icon">⚠</div>
+        <div class="gate-title">ACCESS_RESTRICTED</div>
+        <div class="gate-sub">You need to join or login<br>before viewing matches.</div>
+        <a href="auth.html" class="gate-btn">$ LOGIN / JOIN →</a>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
 <script>
@@ -214,8 +243,7 @@
             .setEndpoint('https://fra.cloud.appwrite.io/v1')
             .setProject('69c764d8003a944c2295');
         new Account(client).get().catch(() => {
-            alert('⚠ You need to login or join before viewing matches.');
-            window.location.href = 'auth.html';
+            document.getElementById('auth-gate').classList.add('show');
         });
     })();
 </script>
