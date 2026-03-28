@@ -419,16 +419,13 @@
 
     async function doUnmatch() {
         document.getElementById('unmatch-dialog').style.display = 'none';
-        // delete messages first, then match (cascade should handle it but just in case)
         await sb.from('messages').delete().eq('match_id', activeMatchId);
-        await sb.from('matches').delete().eq('id', activeMatchId);
-
-        // remove from sidebar
-        MATCHES = MATCHES.filter(m => m.matchId !== activeMatchId);
+        const { error } = await sb.from('matches').delete().eq('id', activeMatchId);
+        if (error) { console.error('unmatch error:', error); return; }
         activeMatchId = null;
         document.getElementById('chat-active').style.display = 'none';
         document.getElementById('chat-empty').style.display = 'flex';
-        renderSidebar();
+        await loadMatches(); // reload from DB to reflect truth
     }
 
     function handleKey(e) { if (e.key === 'Enter') sendMessage(); }

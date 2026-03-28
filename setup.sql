@@ -50,6 +50,9 @@ create policy "Users can create matches"
 create policy "Users can update own matches"
   on matches for update using (auth.uid() = user1 or auth.uid() = user2);
 
+create policy "Users can delete own matches"
+  on matches for delete using (auth.uid() = user1 or auth.uid() = user2);
+
 
 -- MESSAGES
 create table if not exists messages (
@@ -77,6 +80,15 @@ create policy "Users can send messages in their matches"
     exists (
       select 1 from matches
       where matches.id = match_id
+      and (matches.user1 = auth.uid() or matches.user2 = auth.uid())
+    )
+  );
+
+create policy "Users can delete messages in their matches"
+  on messages for delete using (
+    exists (
+      select 1 from matches
+      where matches.id = messages.match_id
       and (matches.user1 = auth.uid() or matches.user2 = auth.uid())
     )
   );
