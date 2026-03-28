@@ -240,7 +240,8 @@
             await account.createEmailPasswordSession({ email, password });
             window.location.href = 'profile.html';
         } catch (err) {
-            if (err.code === 409) {
+            const isConflict = err.code === 409 || err.code === '409' || (err.message && err.message.toLowerCase().includes('already exists'));
+            if (isConflict) {
                 showError('signup-error', 'ACCOUNT_EXISTS — <a href="#" onclick="switchTab(\'login\');return false;" style="color:var(--accent);">LOGIN_INSTEAD →</a>');
             } else {
                 showError('signup-error', err.message || 'SIGNUP_FAILED — try again.');
