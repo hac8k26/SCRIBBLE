@@ -267,7 +267,7 @@
                 <button type="button" class="btn-back" onclick="goStep(2)">← BACK</button>
                 <button type="submit" class="btn-next">$ JOIN_NAPKIN →</button>
             </div>
-            <div id="join-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;"></div>
+            <div id="join-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;padding:10px 14px;border-left:3px solid #e05c5c;background:#fff5f5;line-height:1.7;"></div>
             <div class="form-note">
                 By joining you agree to our <a href="#">TERMS</a> and <a href="#">PRIVACY_POLICY</a>.
             </div>
@@ -364,12 +364,17 @@
             })
             .catch(err => {
                 const isConflict = err.code === 409 || err.code === '409' || (err.message && err.message.toLowerCase().includes('already exists'));
-                errEl.innerHTML = isConflict
-                    ? 'ACCOUNT_EXISTS — <a href="auth.html" style="color:var(--accent);text-decoration:none;font-weight:600;">LOGIN_INSTEAD →</a>'
-                    : (err.message || 'SIGNUP_FAILED — try again.');
-                errEl.style.display = 'block';
-                submitBtn.disabled = false;
-                submitBtn.textContent = '$ JOIN_NAPKIN →';
+                if (isConflict) {
+                    errEl.innerHTML = '⚠ ACCOUNT_ALREADY_EXISTS — redirecting to login...';
+                    errEl.style.display = 'block';
+                    submitBtn.disabled = true;
+                    setTimeout(() => { window.location.href = 'auth.html'; }, 2500);
+                } else {
+                    errEl.innerHTML = err.message || 'SIGNUP_FAILED — try again.';
+                    errEl.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '$ JOIN_NAPKIN →';
+                }
             });
     }
 
