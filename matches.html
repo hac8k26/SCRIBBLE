@@ -174,8 +174,9 @@
 
         @media (max-width: 768px) {
             .app { grid-template-columns: 1fr; }
-            .chat-area { display: none; }
             .match-sidebar { border-right: none; }
+            .chat-area { display: none; position: fixed; inset: 0; z-index: 200; background: var(--bg); flex-direction: column; }
+            .chat-area.mobile-open { display: flex; }
             body { overflow: auto; }
         }
     </style>
@@ -211,6 +212,7 @@
         </div>
         <div id="chat-active" style="display:none; flex-direction:column; height:100%; overflow:hidden;">
             <div class="chat-header">
+                <button id="ch-back" onclick="closeMobileChat()" style="display:none;background:none;border:none;cursor:pointer;color:var(--secondary);padding:4px 8px 4px 0;font-size:16px;" data-tip="Back">←</button>
                 <div class="chat-header-avatar" id="ch-avatar"></div>
                 <div class="chat-header-info">
                     <div class="chat-header-name" id="ch-name"></div>
@@ -374,6 +376,10 @@
         document.getElementById('ch-banner').style.display = 'none';
         document.getElementById('chat-empty').style.display = 'none';
         document.getElementById('chat-active').style.display = 'flex';
+        // mobile: show chat panel and back button
+        const isMobile = window.innerWidth <= 768;
+        document.getElementById('chat-area').classList.toggle('mobile-open', isMobile);
+        document.getElementById('ch-back').style.display = isMobile ? 'block' : 'none';
 
         const msgs = document.getElementById('ch-messages');
         msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:var(--secondary);padding:20px;">LOADING...</div>';
@@ -413,6 +419,11 @@
 
         const m = MATCHES.find(x => x.matchId === activeMatchId);
         if (m) { m.preview = text; document.querySelector(`#mi-${activeMatchId} .match-preview`).textContent = text; }
+    }
+
+    function closeMobileChat() {
+        document.getElementById('chat-area').classList.remove('mobile-open');
+        document.getElementById('ch-back').style.display = 'none';
     }
 
     function confirmUnmatch() {
