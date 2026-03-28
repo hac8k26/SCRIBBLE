@@ -29,7 +29,7 @@
         /* TOOLBAR */
         .toolbar {
             width: 100%; border-bottom: 1px solid var(--border);
-            padding: 16px 40px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+            padding: 16px 40px; display: flex; align-items: center; gap: 12px;
             background: var(--bg);
         }
         .search-box {
@@ -42,31 +42,10 @@
         }
         .search-box input::placeholder { color: var(--secondary); }
         .search-box svg { color: var(--secondary); flex-shrink: 0; }
-        .filter-btn {
-            padding: 8px 14px; border: 1px solid var(--border); background: none;
-            font-family: var(--mono); font-size: 10px; cursor: pointer; color: var(--secondary);
-            letter-spacing: 0.05em; white-space: nowrap;
-        }
-        .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); }
-        .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
         .result-count { font-size: 10px; color: var(--secondary); margin-left: auto; letter-spacing: 0.05em; }
 
         /* LAYOUT */
-        .browse-layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 120px); }
-
-        /* SIDEBAR */
-        .sidebar { border-right: 1px solid var(--border); padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; }
-        .filter-group-title { font-size: 9px; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 12px; }
-        .filter-option { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
-        .filter-option input[type=checkbox] { accent-color: var(--accent); width: 12px; height: 12px; }
-        .filter-option label { font-size: 10px; color: var(--secondary); cursor: pointer; letter-spacing: 0.05em; }
-        .filter-option:hover label { color: var(--text); }
-        .range-row { display: flex; align-items: center; gap: 8px; }
-        .range-row input[type=range] { flex: 1; accent-color: var(--accent); }
-        .range-val { font-size: 10px; color: var(--accent); min-width: 28px; text-align: right; }
-        .sidebar-divider { height: 1px; background: var(--border); }
-        .apply-btn { padding: 10px; background: var(--text); color: var(--bg); border: none; font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: pointer; width: 100%; }
-        .apply-btn:hover { background: var(--accent); }
+        .browse-layout { min-height: calc(100vh - 120px); }
 
         /* PROFILE GRID */
         .profiles-area { padding: 24px 32px; }
@@ -144,8 +123,6 @@
         @media (max-width: 900px) {
             nav { padding: 16px 20px; }
             .toolbar { padding: 12px 20px; }
-            .browse-layout { grid-template-columns: 1fr; }
-            .sidebar { display: none; }
             .profiles-area { padding: 16px; }
             .profiles-grid { grid-template-columns: repeat(3, 1fr); }
             .modal { grid-template-columns: 1fr; }
@@ -171,50 +148,10 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="search-input" placeholder="SEARCH_PROFILES..." oninput="filterProfiles()">
     </div>
-    <button class="filter-btn active" onclick="setFilter('all', this)" data-tip="Show all profiles">ALL</button>
-    <button class="filter-btn" onclick="setFilter('music', this)" data-tip="Filter by music interest">MUSIC</button>
-    <button class="filter-btn" onclick="setFilter('tech', this)" data-tip="Filter by tech interest">TECH</button>
-    <button class="filter-btn" onclick="setFilter('art', this)" data-tip="Filter by art interest">ART</button>
-    <button class="filter-btn" onclick="setFilter('fitness', this)" data-tip="Filter by fitness interest">FITNESS</button>
-    <button class="filter-btn" onclick="setFilter('travel', this)" data-tip="Filter by travel interest">TRAVEL</button>
     <span class="result-count" id="result-count">LOADING...</span>
 </div>
 
 <div class="browse-layout">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div>
-            <div class="filter-group-title">// AGE_RANGE</div>
-            <div class="range-row">
-                <span style="font-size:10px;color:var(--secondary);">18</span>
-                <input type="range" min="18" max="60" value="40" id="age-max" oninput="document.getElementById('age-val').textContent=this.value">
-                <span class="range-val" id="age-val">40</span>
-            </div>
-        </div>
-        <div class="sidebar-divider"></div>
-        <div>
-            <div class="filter-group-title">// LOOKING_FOR</div>
-            <div class="filter-option"><input type="checkbox" id="f1" checked><label for="f1">RELATIONSHIP</label></div>
-            <div class="filter-option"><input type="checkbox" id="f2" checked><label for="f2">FRIENDSHIP</label></div>
-            <div class="filter-option"><input type="checkbox" id="f3"><label for="f3">CASUAL</label></div>
-            <div class="filter-option"><input type="checkbox" id="f4"><label for="f4">NETWORKING</label></div>
-        </div>
-        <div class="sidebar-divider"></div>
-        <div>
-            <div class="filter-group-title">// INTERESTS</div>
-            <div class="filter-option"><input type="checkbox" id="i1" checked><label for="i1">MUSIC</label></div>
-            <div class="filter-option"><input type="checkbox" id="i2" checked><label for="i2">TECH</label></div>
-            <div class="filter-option"><input type="checkbox" id="i3" checked><label for="i3">ART</label></div>
-            <div class="filter-option"><input type="checkbox" id="i4" checked><label for="i4">FITNESS</label></div>
-            <div class="filter-option"><input type="checkbox" id="i5" checked><label for="i5">TRAVEL</label></div>
-            <div class="filter-option"><input type="checkbox" id="i6" checked><label for="i6">FOOD</label></div>
-            <div class="filter-option"><input type="checkbox" id="i7" checked><label for="i7">GAMING</label></div>
-            <div class="filter-option"><input type="checkbox" id="i8" checked><label for="i8">BOOKS</label></div>
-        </div>
-        <div class="sidebar-divider"></div>
-        <button class="apply-btn">APPLY_FILTERS</button>
-    </aside>
-
     <!-- PROFILES -->
     <main class="profiles-area">
         <div class="profiles-grid" id="profiles-grid"></div>
@@ -266,8 +203,6 @@
 
     let currentUser = null;
     let PROFILES = [];
-    let activeFilter = 'all';
-    let activeProfile = null;
 
     // Auth check + load profiles
     account.get().then(user => {
@@ -314,13 +249,6 @@
             card.addEventListener('click', () => openModal(p));
             grid.appendChild(card);
         });
-    }
-
-    function setFilter(f, btn) {
-        activeFilter = f;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        filterProfiles();
     }
 
     function filterProfiles() {
