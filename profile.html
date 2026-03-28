@@ -424,10 +424,24 @@
     }
 
     async function doDelete() {
-        // Delete profile row then auth user
+        const btn = document.querySelector('.delete-confirm');
+        btn.textContent = 'DELETING...';
+        btn.disabled = true;
+
         const { data: { session } } = await sb.auth.getSession();
-        if (session) await sb.from('profiles').delete().eq('id', session.user.id);
-        const { error } = await sb.auth.admin?.deleteUser(session.user.id).catch(() => ({})) || {};
+        if (!session) { window.location.href = 'index.html'; return; }
+
+        const uid = session.user.id;
+
+        // delete all user data
+        await sb.from('messages').delete().eq('sender_id', uid);
+        await sb.from('matches').delete().or(`user1.eq.${uid},user2.eq.${uid}`);
+        await sb.from('profiles').delete().eq('id', uid);
+
+        // delete auth user via database function
+        const { error } = await sb.rpc('delete_own_account');
+        if (error) console.error('delete auth error:', error);
+
         await sb.auth.signOut();
         window.location.href = 'index.html';
     }
