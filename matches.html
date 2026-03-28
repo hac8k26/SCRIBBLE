@@ -267,23 +267,25 @@
 
     async function loadMatches() {
         const { data, error } = await sb.from('matches')
-            .select('*, profiles!matches_user2_fkey(id,name,college), profiles!matches_user1_fkey(id,name,college)')
+            .select('*')
             .or(`user1.eq.${currentUser.id},user2.eq.${currentUser.id}`)
             .order('updated_at', { ascending: false });
 
         if (error) { console.error(error); document.getElementById('conv-count').textContent = 'ERROR'; return; }
+        if (!data?.length) { renderSidebar(); return; }
 
-        MATCHES = (data || []).map(m => {
-            const isUser1 = m.user1 === currentUser.id;
-            const profile = isUser1 ? m['profiles!matches_user2_fkey'] : m['profiles!matches_user1_fkey'];
-            const otherId = isUser1 ? m.user2 : m.user1;
-            const seed = Math.abs((otherId || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+        // get all other user IDs then fetch their profiles
+        const otherIds = data.map(m => m.user1 === currentUser.id ? m.user2 : m.user1);
+        const { data: profiles } = await sb.from('profiles').select('id,name,college').in('id', otherIds);
+
+        MATCHES = data.map(m => {
+            const otherId = m.user1 === currentUser.id ? m.user2 : m.user1;
+            const profile = profiles?.find(p => p.id === otherId) || {};
             return {
                 matchId: m.id,
                 otherId,
-                name: profile?.name || 'unknown',
-                college: profile?.college || '',
-                seed,
+                name: profile.name || 'unknown',
+                college: profile.college || '',
                 preview: m.last_message || 'matched ♥',
                 lastTime: m.updated_at || m.created_at,
             };
