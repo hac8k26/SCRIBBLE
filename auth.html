@@ -44,19 +44,6 @@
         .auth-title span { color: var(--accent); }
         .auth-sub { font-size: 11px; color: var(--secondary); line-height: 1.7; }
 
-        /* TABS */
-        .auth-tabs {
-            display: flex; gap: 1px; background: var(--border);
-            border: 1px solid var(--border); margin-bottom: 20px;
-        }
-        .auth-tab {
-            flex: 1; padding: 13px; text-align: center; font-size: 11px; font-weight: 600;
-            cursor: pointer; background: var(--bg); color: var(--secondary);
-            letter-spacing: 0.06em; border: none; font-family: var(--mono); transition: background 0.15s, color 0.15s;
-        }
-        .auth-tab.active { background: var(--text); color: var(--bg); }
-        .auth-tab:hover:not(.active) { color: var(--accent); }
-
         /* FORM */
         .form-group { margin-bottom: 10px; }
         .form-label { font-size: 9px; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 6px; display: block; }
@@ -124,12 +111,7 @@
         <div class="auth-header">
             <div class="auth-tag">NAPKIN — OPEN SOURCE DATING</div>
             <h1 class="auth-title">Welcome<br><span>back.</span></h1>
-            <p class="auth-sub" id="auth-sub">Sign in to your account to continue.</p>
-        </div>
-
-        <div class="auth-tabs">
-            <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">LOGIN</button>
-            <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">SIGN_UP</button>
+            <p class="auth-sub">Sign in to your account to continue.</p>
         </div>
 
         <!-- LOGIN -->
@@ -145,27 +127,9 @@
             <div id="login-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;"></div>
             <button type="submit" class="form-submit" id="login-btn">$ LOGIN →</button>
             <div class="form-note">
-                No account? <a href="#" onclick="switchTab('signup');return false;">CREATE_ONE →</a>
+                No account? <a href="join.html">CREATE_ONE →</a>
                 &nbsp;·&nbsp;
                 <a href="#" style="color:var(--secondary);">FORGOT_PASSWORD</a>
-            </div>
-        </form>
-
-        <!-- SIGNUP -->
-        <form id="form-signup" style="display:none;" onsubmit="handleSignup(event)">
-            <div class="form-group">
-                <label class="form-label">// EMAIL</label>
-                <input class="form-input" id="signup-email" type="email" placeholder="you@gmail.com" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">// PASSWORD</label>
-                <input class="form-input" id="signup-password" type="password" placeholder="min 8 characters" minlength="8" required>
-            </div>
-            <div id="signup-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;"></div>
-            <button type="submit" class="form-submit" id="signup-btn">$ CREATE_PROFILE →</button>
-            <div class="form-note">
-                By signing up you agree to our <a href="#">TERMS</a> and <a href="#">PRIVACY_POLICY</a>.<br>
-                Already have an account? <a href="#" onclick="switchTab('login');return false;">LOGIN →</a>
             </div>
         </form>
 
@@ -185,7 +149,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
 <script>
-    const { Client, Account, ID } = Appwrite;
+    const { Client, Account } = Appwrite;
 
     const client = new Client()
         .setEndpoint('https://fra.cloud.appwrite.io/v1')
@@ -198,10 +162,10 @@
         window.location.href = 'profile.html';
     }).catch(() => {});
 
-    function setLoading(btnId, loading) {
-        const btn = document.getElementById(btnId);
+    function setLoading(loading) {
+        const btn = document.getElementById('login-btn');
         btn.disabled = loading;
-        btn.textContent = loading ? '...' : (btnId === 'login-btn' ? '$ LOGIN →' : '$ CREATE_PROFILE →');
+        btn.textContent = loading ? '...' : '$ LOGIN →';
     }
 
     function showError(id, msg) {
@@ -219,47 +183,14 @@
         hideError('login-error');
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
-        setLoading('login-btn', true);
+        setLoading(true);
         try {
             await account.createEmailPasswordSession({ email, password });
             window.location.href = 'profile.html';
         } catch (err) {
             showError('login-error', err.message || 'LOGIN_FAILED — check your credentials.');
-            setLoading('login-btn', false);
+            setLoading(false);
         }
-    }
-
-    async function handleSignup(e) {
-        e.preventDefault();
-        hideError('signup-error');
-        const email = document.getElementById('signup-email').value.trim();
-        const password = document.getElementById('signup-password').value;
-        setLoading('signup-btn', true);
-        try {
-            await account.create({ userId: ID.unique(), email, password });
-            await account.createEmailPasswordSession({ email, password });
-            window.location.href = 'profile.html';
-        } catch (err) {
-            const isConflict = err.code === 409 || err.code === '409' || (err.message && err.message.toLowerCase().includes('already exists'));
-            if (isConflict) {
-                showError('signup-error', 'ACCOUNT_EXISTS — <a href="#" onclick="switchTab(\'login\');return false;" style="color:var(--accent);">LOGIN_INSTEAD →</a>');
-            } else {
-                showError('signup-error', err.message || 'SIGNUP_FAILED — try again.');
-            }
-            setLoading('signup-btn', false);
-        }
-    }
-
-    function switchTab(tab) {
-        const isLogin = tab === 'login';
-        document.getElementById('tab-login').classList.toggle('active', isLogin);
-        document.getElementById('tab-signup').classList.toggle('active', !isLogin);
-        document.getElementById('form-login').style.display = isLogin ? 'block' : 'none';
-        document.getElementById('form-signup').style.display = isLogin ? 'none' : 'block';
-        document.querySelector('.auth-title').innerHTML = isLogin ? 'Welcome<br><span>back.</span>' : 'Create your<br><span>profile.</span>';
-        document.getElementById('auth-sub').textContent = isLogin
-            ? 'Sign in to your account to continue.'
-            : 'Join the registry. Free, open source, no dark patterns.';
     }
 
     (function(){
