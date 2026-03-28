@@ -156,7 +156,10 @@
 
 <nav>
     <a href="index.html" class="nav-logo" data-tip="Back to home">NAPKIN</a>
-    <a href="join.html" class="nav-cta" id="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="matches.html" class="nav-cta" id="nav-matches" style="display:none;" data-tip="View your matches">MY_MATCHES →</a>
+        <a href="join.html" class="nav-cta" id="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
+    </div>
 </nav>
 
 <!-- TOOLBAR -->
@@ -229,6 +232,7 @@
         if (!session) { document.getElementById('auth-gate').classList.add('show'); return; }
         currentUser = session.user;
         document.getElementById('nav-cta').style.display = 'none';
+        document.getElementById('nav-matches').style.display = 'inline-block';
         loadProfiles();
     });
 
