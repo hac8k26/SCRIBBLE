@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAPKIN — Join</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f7; --text: #1a1a18; --secondary: #6b6b68;
+            --border: #e5e5e1; --accent: #d97757; --mono: 'IBM Plex Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg); color: var(--text); font-family: var(--mono);
+            min-height: 100vh; display: flex; flex-direction: column;
+        }
+
+        nav {
+            width: 100%; padding: 20px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .nav-logo { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-decoration: none; }
+        .nav-back { font-size: 10px; color: var(--secondary); text-decoration: none; letter-spacing: 0.05em; }
+        .nav-back:hover { color: var(--accent); }
+
+        .join-main {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 48px 20px;
+        }
+        .join-wrap { width: 100%; max-width: 480px; }
+
+        /* STEP INDICATOR */
+        .steps-bar {
+            display: flex; gap: 1px; background: var(--border);
+            border: 1px solid var(--border); margin-bottom: 36px;
+        }
+        .step-pip {
+            flex: 1; height: 3px; background: var(--bg); transition: background 0.2s;
+        }
+        .step-pip.done { background: var(--accent); }
+        .step-pip.active { background: var(--text); }
+
+        /* HEADER */
+        .join-tag {
+            font-size: 10px; color: var(--accent); letter-spacing: 0.15em;
+            margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        }
+        .join-tag::before { content: ''; width: 24px; height: 1px; background: var(--accent); display: inline-block; }
+        .join-title { font-size: 26px; font-weight: 600; line-height: 1.2; margin-bottom: 6px; }
+        .join-title span { color: var(--accent); }
+        .join-sub { font-size: 11px; color: var(--secondary); line-height: 1.7; margin-bottom: 28px; }
+
+        /* FORM */
+        .step-form { display: none; }
+        .step-form.active { display: block; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-label { font-size: 9px; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 6px; display: block; }
+        .form-input {
+            width: 100%; padding: 11px 14px; border: 1px solid var(--border);
+            background: var(--bg); font-family: var(--mono); font-size: 12px;
+            color: var(--text); outline: none; transition: border-color 0.15s;
+            appearance: none;
+        }
+        .form-input:focus { border-color: var(--accent); }
+        .form-input::placeholder { color: var(--secondary); }
+
+        select.form-input {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6b68'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 14px center;
+            padding-right: 36px; cursor: pointer;
+        }
+        select.form-input option { font-family: var(--mono); }
+
+        optgroup { font-family: var(--mono); font-size: 10px; color: var(--secondary); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .btn-next {
+            width: 100%; padding: 15px; background: var(--text); color: var(--bg);
+            border: none; font-family: var(--mono); font-size: 12px; font-weight: 600;
+            cursor: pointer; margin-top: 6px; letter-spacing: 0.05em; transition: background 0.15s;
+        }
+        .btn-next:hover { background: var(--accent); }
+
+        .btn-row { display: flex; gap: 8px; margin-top: 6px; }
+        .btn-back {
+            padding: 15px 20px; background: none; color: var(--secondary);
+            border: 1px solid var(--border); font-family: var(--mono); font-size: 12px;
+            font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+        }
+        .btn-back:hover { border-color: var(--text); color: var(--text); }
+
+        .form-note { font-size: 9px; color: var(--secondary); text-align: center; margin-top: 16px; line-height: 1.8; }
+        .form-note a { color: var(--accent); text-decoration: none; }
+
+        /* STEP COUNTER */
+        .step-counter { font-size: 9px; color: var(--secondary); letter-spacing: 0.1em; margin-bottom: 20px; }
+        .step-counter span { color: var(--accent); }
+
+        /* SUCCESS */
+        .success-screen {
+            display: none; flex-direction: column; align-items: center;
+            text-align: center; gap: 16px; padding: 20px 0;
+        }
+        .success-screen.show { display: flex; }
+        .success-icon { font-size: 40px; }
+        .success-title { font-size: 24px; font-weight: 600; }
+        .success-title span { color: var(--accent); }
+        .success-sub { font-size: 11px; color: var(--secondary); line-height: 1.8; max-width: 320px; }
+
+        /* FOOTER */
+        .join-footer {
+            border-top: 1px solid var(--border); padding: 16px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 9px; color: var(--secondary); letter-spacing: 0.06em; flex-shrink: 0;
+        }
+        .join-footer a { color: var(--secondary); text-decoration: none; }
+        .join-footer a:hover { color: var(--accent); }
+
+        /* TOOLTIP */
+        #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
+        #tip.show { opacity: 1; }
+
+        @media (max-width: 540px) {
+            nav { padding: 16px 20px; }
+            .join-footer { padding: 16px 20px; flex-direction: column; gap: 8px; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">NAPKIN</a>
+    <a href="join.html" class="nav-back" data-tip="Back to login">← BACK</a>
+</nav>
+
+<main class="join-main">
+    <div class="join-wrap">
+
+        <div class="steps-bar">
+            <div class="step-pip active" id="pip-1"></div>
+            <div class="step-pip" id="pip-2"></div>
+            <div class="step-pip" id="pip-3"></div>
+        </div>
+
+        <!-- STEP 1 — NAME & AGE -->
+        <form class="step-form active" id="step-1" onsubmit="goStep(2, event)">
+            <div class="join-tag">NAPKIN — JOIN</div>
+            <h1 class="join-title">What's your<br><span>name?</span></h1>
+            <p class="join-sub">Let's start with the basics.</p>
+            <div class="step-counter">STEP <span>01</span> / 03</div>
+
+            <div class="form-group">
+                <label class="form-label">// FULL NAME</label>
+                <input class="form-input" type="text" id="f-name" placeholder="Your name" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">// AGE</label>
+                <input class="form-input" type="number" id="f-age" placeholder="e.g. 20" min="16" max="40" required>
+            </div>
+
+            <button type="submit" class="btn-next">NEXT →</button>
+            <div class="form-note">
+                Already have an account? <a href="auth.html">LOGIN →</a>
+            </div>
+        </form>
+
+        <!-- STEP 2 — COLLEGE -->
+        <form class="step-form" id="step-2" onsubmit="goStep(3, event)">
+            <div class="join-tag">NAPKIN — JOIN</div>
+            <h1 class="join-title">Your<br><span>college?</span></h1>
+            <p class="join-sub">Find people from your campus.</p>
+            <div class="step-counter">STEP <span>02</span> / 03</div>
+
+            <div class="form-group">
+                <label class="form-label">// SELECT COLLEGE</label>
+                <select class="form-input" id="f-college" required>
+                    <option value="" disabled selected>Choose your college...</option>
+
+                    <optgroup label="── VIZAG · Engineering & Technical ──">
+                        <option>AUCE (Andhra University College of Engineering)</option>
+                        <option>GITAM University</option>
+                        <option>GVPCE (Gayatri Vidya Parishad College of Engineering)</option>
+                        <option>GVPW (GVP College for Women)</option>
+                        <option>ANITS (Anil Neerukonda Institute of Technology)</option>
+                        <option>Raghu Engineering College</option>
+                        <option>Raghu Institute of Technology</option>
+                        <option>Vignan's Institute (VIIT - Duvvada)</option>
+                        <option>Vignan's Institute (VIEW - Gajuwaka)</option>
+                        <option>NSRIT (Nadirshah Rashid Institute of Technology)</option>
+                        <option>Sanketika Vidya Parishad</option>
+                        <option>Sanketika Institute of Technology</option>
+                        <option>Pydah College of Engineering</option>
+                        <option>Chaitanya Engineering College</option>
+                        <option>Aditya Institute of Technology</option>
+                        <option>Lendi Institute of Engineering (Jonnada)</option>
+                        <option>Vizag Institute of Technology (VIT)</option>
+                    </optgroup>
+
+                    <optgroup label="── VIZAG · Degree & Post-Graduate ──">
+                        <option>Bullayya College</option>
+                        <option>Dr. L.B. College</option>
+                        <option>Mrs. AVN College</option>
+                        <option>St. Joseph's Women's College</option>
+                        <option>Samata College</option>
+                        <option>Aditya Degree College</option>
+                        <option>Prism Degree College</option>
+                        <option>BVK College</option>
+                    </optgroup>
+
+                    <optgroup label="── VIZAG · Intermediate / Junior ──">
+                        <option>Sri Chaitanya Junior College (Vizag)</option>
+                        <option>Narayana Junior College (Vizag)</option>
+                        <option>GVP Junior College</option>
+                        <option>Govt. Junior College (CP)</option>
+                        <option>Govt. Junior College (Gnanapuram)</option>
+                        <option>Govt. Junior College (VSP)</option>
+                        <option>Tirumala Junior College</option>
+                    </optgroup>
+
+                    <optgroup label="── ANAKAPALLI · Engineering & Technical ──">
+                        <option>DIET (Dadi Institute of Engineering & Technology)</option>
+                        <option>Avanthi Institute of Engineering and Technology</option>
+                        <option>Sanketika Institute of Technology (AKP Branch)</option>
+                    </optgroup>
+
+                    <optgroup label="── ANAKAPALLI · Degree & Intermediate ──">
+                        <option>AMAL College (Anakapalli)</option>
+                        <option>Gowri Degree & Junior College</option>
+                        <option>Sri Shiridi Sai Degree College</option>
+                        <option>Vignan Junior College (AKP)</option>
+                        <option>Sri Chaitanya (AKP Branch)</option>
+                        <option>Narayana (AKP Branch)</option>
+                        <option>Government Degree College (Anakapalli)</option>
+                        <option>AS Raja College</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="btn-row">
+                <button type="button" class="btn-back" onclick="goStep(1)">← BACK</button>
+                <button type="submit" class="btn-next">NEXT →</button>
+            </div>
+        </form>
+
+        <!-- STEP 3 — ACCOUNT -->
+        <form class="step-form" id="step-3" onsubmit="handleFinish(event)">
+            <div class="join-tag">NAPKIN — JOIN</div>
+            <h1 class="join-title">Create your<br><span>account.</span></h1>
+            <p class="join-sub">Almost done — set up your login.</p>
+            <div class="step-counter">STEP <span>03</span> / 03</div>
+
+            <div class="form-group">
+                <label class="form-label">// EMAIL</label>
+                <input class="form-input" type="email" id="f-email" placeholder="you@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">// PASSWORD</label>
+                <input class="form-input" type="password" id="f-password" placeholder="min 8 characters" minlength="8" required>
+            </div>
+
+            <div class="btn-row">
+                <button type="button" class="btn-back" onclick="goStep(2)">← BACK</button>
+                <button type="submit" class="btn-next">$ JOIN_NAPKIN →</button>
+            </div>
+            <div id="join-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;"></div>
+            <div class="form-note">
+                By joining you agree to our <a href="#">TERMS</a> and <a href="#">PRIVACY_POLICY</a>.
+            </div>
+        </form>
+
+        <!-- SUCCESS -->
+        <div class="success-screen" id="success">
+            <div class="success-icon">♥</div>
+            <div class="join-tag" style="justify-content:center;">NAPKIN — WELCOME</div>
+            <div class="success-title">You're in,<br><span id="success-name"></span>.</div>
+            <p class="success-sub">Your profile is live. Start browsing people from your campus.</p>
+            <a href="browse.html" class="btn-next" style="display:block;text-align:center;text-decoration:none;margin-top:8px;">$ BROWSE_PROFILES →</a>
+        </div>
+
+    </div>
+</main>
+
+<footer class="join-footer">
+    <span>NAPKIN — MIT_LICENSED · OPEN_SOURCE</span>
+    <div style="display:flex;gap:20px;">
+        <a href="#">PRIVACY</a>
+        <a href="#">TERMS</a>
+    </div>
+</footer>
+
+<div id="tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script>
+    const { Client, Account, Databases, ID } = Appwrite;
+    const client = new Client()
+        .setEndpoint('https://fra.cloud.appwrite.io/v1')
+        .setProject('69c764d8003a944c2295');
+    const account = new Account(client);
+    const databases = new Databases(client);
+
+    const DB_ID  = '69c7742c000819452b70';  // napkin database
+    const COL_ID = 'profiles';               // profiles collection
+
+    // If already logged in, skip to profile
+    account.get().then(() => {
+        window.location.href = 'profile.html';
+    }).catch(() => {});
+
+    let currentStep = 1;
+
+    function goStep(n, e) {
+        if (e) e.preventDefault();
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        for (let i = 1; i <= 3; i++) {
+            const pip = document.getElementById(`pip-${i}`);
+            pip.className = 'step-pip';
+            if (i < n) pip.classList.add('done');
+            else if (i === n) pip.classList.add('active');
+        }
+        currentStep = n;
+        document.getElementById(`step-${n}`).classList.add('active');
+        window.scrollTo(0, 0);
+    }
+
+    function handleFinish(e) {
+        e.preventDefault();
+        const name    = document.getElementById('f-name').value.trim();
+        const age     = document.getElementById('f-age').value.trim();
+        const college = document.getElementById('f-college').value.trim();
+        const email   = document.getElementById('f-email').value.trim();
+        const pass    = document.getElementById('f-password').value;
+
+        const submitBtn = document.querySelector('#step-3 button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'CREATING...';
+
+        const errEl = document.getElementById('join-error');
+        errEl.style.display = 'none';
+
+        // 1. Create account  2. Login  3. Save profile to database
+        account.create(ID.unique(), email, pass, name)
+            .then(() => account.createEmailPasswordSession(email, pass))
+            .then(() => account.get())
+            .then(user => databases.createDocument(DB_ID, COL_ID, ID.unique(), {
+                userId:  user.$id,
+                name:    name,
+                age:     parseInt(age),
+                college: college
+            }))
+            .then(() => {
+                for (let i = 1; i <= 3; i++) {
+                    document.getElementById(`pip-${i}`).className = 'step-pip done';
+                }
+                document.getElementById('step-3').classList.remove('active');
+                document.getElementById('success-name').textContent = name.split(' ')[0].toLowerCase();
+                document.getElementById('success').classList.add('show');
+                window.scrollTo(0, 0);
+            })
+            .catch(err => {
+                errEl.textContent = err.message || 'SIGNUP_FAILED — try again.';
+                errEl.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = '$ JOIN_NAPKIN →';
+            });
+    }
+
+    // Tooltip
+    (function(){
+        const tip = document.getElementById('tip');
+        let cur = null;
+        document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
+        document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
+        document.addEventListener('mousemove', e => {
+            if (!cur) return;
+            const x = e.clientX + 14, y = e.clientY + 14;
+            tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+            tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+        });
+        document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+    })();
+</script>
+</body>
+</html>

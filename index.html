@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAPKIN — Open Source Dating</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f7;
+            --text: #1a1a18;
+            --secondary: #6b6b68;
+            --border: #e5e5e1;
+            --accent: #d97757;
+            --mono: 'IBM Plex Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: var(--mono); overflow-x: hidden; min-height: 100vh; }
+
+        /* NAV */
+        nav {
+            width: 100%; padding: 20px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: var(--bg); z-index: 100;
+        }
+        .nav-logo { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a { font-size: 11px; color: var(--secondary); text-decoration: none; letter-spacing: 0.05em; }
+        .nav-links a:hover { color: var(--accent); }
+        .nav-cta {
+            padding: 8px 18px; border: 1px solid var(--text);
+            background: none; font-family: var(--mono); font-size: 11px;
+            font-weight: 600; cursor: pointer; color: var(--text); text-decoration: none;
+        }
+        .nav-cta:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        /* HERO */
+        .hero {
+            width: 100%; max-width: 1400px; margin: 0 auto;
+            padding: 96px 40px 80px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+        }
+        .hero-tag {
+            font-size: 10px; color: var(--accent); letter-spacing: 0.15em;
+            margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+        }
+        .hero-tag::before { content: ''; width: 24px; height: 1px; background: var(--accent); display: inline-block; }
+        .hero-title { font-size: clamp(26px, 3.5vw, 46px); font-weight: 600; line-height: 1.15; margin-bottom: 20px; letter-spacing: -0.02em; }
+        .hero-title span { color: var(--accent); }
+        .hero-desc { font-size: 13px; color: var(--secondary); line-height: 1.8; margin-bottom: 28px; max-width: 480px; }
+        .hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn-primary {
+            padding: 14px 28px; background: var(--text); color: var(--bg);
+            border: none; font-family: var(--mono); font-size: 12px;
+            font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;
+        }
+        .btn-primary:hover { background: var(--accent); }
+        .btn-secondary {
+            padding: 14px 28px; background: none; color: var(--text);
+            border: 1px solid var(--text); font-family: var(--mono); font-size: 12px;
+            font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block;
+        }
+        .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* HERO RIGHT — TERMINAL PANEL */
+        .hero-right { position: relative; }
+        .terminal-panel {
+            border: 1px solid var(--border); background: var(--text);
+            display: flex; flex-direction: column;
+        }
+        .terminal-bar {
+            padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.07);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .terminal-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .terminal-title { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 0.12em; margin-left: 4px; }
+        .terminal-feed { padding: 16px 14px; display: flex; flex-direction: column; gap: 10px; min-height: 280px; }
+        .feed-line { display: flex; align-items: flex-start; gap: 10px; }
+        .feed-prompt { font-size: 10px; color: var(--accent); flex-shrink: 0; }
+        .feed-text { font-size: 10px; color: rgba(255,255,255,0.55); line-height: 1.5; }
+        .feed-text .hi { color: rgba(255,255,255,0.9); }
+        .feed-text .muted { color: rgba(255,255,255,0.25); }
+        .feed-cursor { display: inline-block; width: 7px; height: 12px; background: var(--accent); vertical-align: middle; animation: blink 1s step-end infinite; margin-left: 2px; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+        .hero-stat-row { display: flex; gap: 1px; background: var(--border); border: 1px solid var(--border); border-top: none; }
+        .hero-stat { flex: 1; background: var(--bg); padding: 12px; text-align: center; }
+        .hero-stat-num { font-size: 22px; font-weight: 600; color: var(--accent); }
+        .hero-stat-label { font-size: 9px; color: var(--secondary); margin-top: 2px; letter-spacing: 0.08em; }
+
+        /* TICKER */
+        .ticker-wrap { width: 100%; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); overflow: hidden; padding: 10px 0; background: var(--text); }
+        .ticker { display: flex; white-space: nowrap; animation: ticker 30s linear infinite; }
+        .ticker-item { font-size: 10px; color: var(--bg); padding: 0 32px; letter-spacing: 0.1em; flex-shrink: 0; }
+        .ticker-item span { color: var(--accent); margin-right: 8px; }
+        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        /* SECTIONS */
+        .section { width: 100%; max-width: 1400px; margin: 0 auto; padding: 80px 40px; }
+        .section-header { margin-bottom: 48px; }
+        .section-tag { font-size: 10px; color: var(--accent); letter-spacing: 0.15em; margin-bottom: 12px; }
+        .section-title { font-size: clamp(20px, 2.5vw, 32px); font-weight: 600; }
+
+        /* FEATURES */
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+        .feature-card { background: var(--bg); padding: 32px 28px; }
+        .feature-card:hover { background: #f1f1ee; }
+        .feature-icon { width: 36px; height: 36px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; color: var(--accent); }
+        .feature-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+        .feature-desc { font-size: 11px; color: var(--secondary); line-height: 1.8; }
+
+        /* STEPS */
+        .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+        .step { background: var(--bg); padding: 32px 24px; position: relative; }
+        .step-num { font-size: 36px; font-weight: 600; color: var(--border); margin-bottom: 16px; line-height: 1; }
+        .step:hover .step-num { color: var(--accent); }
+        .step-title { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+        .step-desc { font-size: 11px; color: var(--secondary); line-height: 1.7; }
+        .step-arrow { position: absolute; top: 32px; right: -1px; font-size: 10px; color: var(--border); z-index: 1; }
+
+        /* INTEREST TAGS */
+        .interests-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+        .interest-card { background: var(--bg); padding: 24px 20px; cursor: pointer; text-decoration: none; color: var(--text); display: flex; flex-direction: column; gap: 8px; }
+        .interest-card:hover { background: var(--accent); color: #fff; }
+        .interest-card:hover .interest-count { color: rgba(255,255,255,0.7); }
+        .interest-name { font-size: 12px; font-weight: 600; }
+        .interest-count { font-size: 9px; color: var(--secondary); letter-spacing: 0.08em; }
+        .interest-bar { height: 2px; background: var(--border); margin-top: 4px; }
+        .interest-card:hover .interest-bar { background: rgba(255,255,255,0.4); }
+
+        /* CTA BANNER */
+        .cta-banner { width: 100%; background: var(--text); padding: 60px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px; }
+        .cta-banner h2 { font-size: clamp(20px, 3vw, 36px); color: var(--bg); font-weight: 600; }
+        .cta-banner p { font-size: 12px; color: var(--secondary); max-width: 480px; line-height: 1.8; }
+        .cta-banner .btn-primary { background: var(--accent); }
+        .cta-banner .btn-primary:hover { background: var(--bg); color: var(--text); }
+
+        /* FOOTER */
+        footer { width: 100%; border-top: 1px solid var(--border); padding: 32px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+        .footer-logo { font-size: 12px; font-weight: 600; color: var(--accent); }
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a { font-size: 10px; color: var(--secondary); text-decoration: none; letter-spacing: 0.05em; }
+        .footer-links a:hover { color: var(--accent); }
+        .footer-copy { font-size: 10px; color: var(--secondary); }
+
+        /* TOOLTIP */
+        #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
+        #tip.show { opacity: 1; }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            nav { padding: 16px 20px; }
+            .hero { grid-template-columns: 1fr; padding: 40px 20px; gap: 32px; }
+            .hero-right { display: none; }
+            .features-grid { grid-template-columns: 1fr 1fr; }
+            .steps { grid-template-columns: 1fr 1fr; }
+            .interests-grid { grid-template-columns: repeat(2, 1fr); }
+            .section { padding: 48px 20px; }
+            .cta-banner { padding: 48px 20px; }
+            footer { padding: 24px 20px; }
+        }
+        @media (max-width: 540px) {
+            .features-grid { grid-template-columns: 1fr; }
+            .steps { grid-template-columns: 1fr; }
+            .interests-grid { grid-template-columns: 1fr 1fr; }
+            .hero-btns { flex-direction: column; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+    <div class="nav-logo">NAPKIN</div>
+
+    <div style="display:flex;align-items:center;gap:12px;">
+        <a href="join.html" class="nav-cta" id="btn-login" data-tip="Login to your account">LOGIN →</a>
+        <a href="join.html" class="nav-cta" id="btn-join" style="background:var(--accent);border-color:var(--accent);color:#fff;" data-tip="Create your profile">JOIN →</a>
+        <a href="profile.html" class="nav-cta" id="btn-profile" style="display:none;background:var(--accent);border-color:var(--accent);color:#fff;" data-tip="View your profile">[ PROFILE ]</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-left">
+        <div class="hero-tag">NAPKIN — OPEN SOURCE DATING</div>
+        <h1 class="hero-title">
+            Find Real<br>
+            <span>Connections</span><br>
+            Not Algorithms
+        </h1>
+        <p class="hero-desc">
+            A transparent, open-source dating platform. No black-box matching, no dark patterns —
+            just honest profiles, shared interests, and real conversations.
+        </p>
+        <div class="hero-btns">
+            <a href="browse.html" class="btn-primary" id="btn-start" data-tip="Start browsing profiles" onclick="return checkAuth(event)">$ START_MATCHING</a>
+            <a href="#how" class="btn-secondary" data-tip="See how Napkin works">HOW_IT_WORKS</a>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:16px;">
+            <a href="https://github.com" target="_blank" style="font-family:var(--mono);font-size:9px;color:var(--secondary);text-decoration:none;letter-spacing:0.08em;" data-tip="View source on GitHub">GITHUB ↗</a>
+            <a href="#" style="font-family:var(--mono);font-size:9px;color:var(--secondary);text-decoration:none;letter-spacing:0.08em;" data-tip="Privacy Policy">PRIVACY</a>
+            <a href="#" style="font-family:var(--mono);font-size:9px;color:var(--secondary);text-decoration:none;letter-spacing:0.08em;" data-tip="Terms of Service">TERMS</a>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="terminal-panel">
+            <div class="terminal-bar">
+                <div class="terminal-dot" style="background:#e05c5c;"></div>
+                <div class="terminal-dot" style="background:#e0b84a;"></div>
+                <div class="terminal-dot" style="background:#4caf50;"></div>
+                <span class="terminal-title">// NAPKIN_LIVE_FEED</span>
+            </div>
+            <div class="terminal-feed" id="terminal-feed"></div>
+        </div>
+        <div class="hero-stat-row">
+            <div class="hero-stat" data-tip="Active users on the platform">
+                <div class="hero-stat-num">12K+</div>
+                <div class="hero-stat-label">USERS</div>
+            </div>
+            <div class="hero-stat" data-tip="Matches made this month">
+                <div class="hero-stat-num">3.4K</div>
+                <div class="hero-stat-label">MATCHES</div>
+            </div>
+            <div class="hero-stat" data-tip="100% open source, no hidden code">
+                <div class="hero-stat-num">OSS</div>
+                <div class="hero-stat-label">OPEN_SRC</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+    <div class="ticker" id="ticker"></div>
+</div>
+
+<!-- FEATURES -->
+<section class="section">
+    <div class="section-header">
+        <div class="section-tag">// FEATURES</div>
+        <h2 class="section-title">Dating done differently.<br>Transparently.</h2>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card" data-tip="No hidden ranking or shadow banning">
+            <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="feature-title">TRANSPARENT_MATCHING</div>
+            <div class="feature-desc">No black-box algorithms. Matching is based on shared interests and mutual likes — nothing hidden.</div>
+        </div>
+        <div class="feature-card" data-tip="End-to-end encrypted messages">
+            <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="feature-title">PRIVATE_MESSAGING</div>
+            <div class="feature-desc">Messages only unlock after a mutual match. No unsolicited DMs, no spam — ever.</div>
+        </div>
+        <div class="feature-card" data-tip="Filter by interests, not just looks">
+            <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            </div>
+            <div class="feature-title">INTEREST_FILTERS</div>
+            <div class="feature-desc">Filter by hobbies, values, lifestyle, and location. Find people who actually share your world.</div>
+        </div>
+        <div class="feature-card" data-tip="No pay-to-match dark patterns">
+            <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="feature-title">FREE_FOREVER</div>
+            <div class="feature-desc">Core features are free. No boosts, no super-likes, no pay walls. Community-funded via donations.</div>
+        </div>
+        <div class="feature-card" data-tip="Your data belongs to you">
+            <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="feature-title">DATA_OWNERSHIP</div>
+            <div class="feature-desc">Export or delete your data anytime. We don't sell it, we don't train models on it. It's yours.</div>
+        </div>
+        <div class="feature-card" data-tip="Self-host your own instance">
+            <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="feature-title">SELF_HOSTABLE</div>
+            <div class="feature-desc">Run your own instance for your community. Full source on GitHub — MIT licensed, fork freely.</div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how" style="padding-top:0;">
+    <div class="section-header">
+        <div class="section-tag">// HOW_IT_WORKS</div>
+        <h2 class="section-title">Four steps to a real connection</h2>
+    </div>
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-title">CREATE_PROFILE</div>
+            <div class="step-desc">Sign up and build your profile. Add photos, a bio, and tag your interests. No dark patterns on signup.</div>
+            <div class="step-arrow">→</div>
+        </div>
+        <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-title">BROWSE_PROFILES</div>
+            <div class="step-desc">Browse the registry. Filter by interests, age, location. No algorithmic feed — you control the view.</div>
+            <div class="step-arrow">→</div>
+        </div>
+        <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-title">MUTUAL_LIKE</div>
+            <div class="step-desc">Like a profile. If they like you back, it's a match. Simple, symmetric, no one-sided messaging.</div>
+            <div class="step-arrow">→</div>
+        </div>
+        <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-title">START_TALKING</div>
+            <div class="step-desc">Chat opens on a mutual match. Take it at your own pace — no timers, no pressure mechanics.</div>
+        </div>
+    </div>
+</section>
+
+<!-- INTERESTS -->
+<section class="section" id="interests" style="padding-top:0;">
+    <div class="section-header">
+        <div class="section-tag">// BROWSE_BY_INTEREST</div>
+        <h2 class="section-title">Find your people</h2>
+    </div>
+    <div class="interests-grid">
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into music">
+            <div class="interest-name">MUSIC</div>
+            <div class="interest-count">CONCERTS · VINYL · PRODUCTION</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into tech">
+            <div class="interest-name">TECH</div>
+            <div class="interest-count">CODE · HARDWARE · OSS</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into art">
+            <div class="interest-name">ART</div>
+            <div class="interest-count">DESIGN · PAINTING · PHOTO</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into fitness">
+            <div class="interest-name">FITNESS</div>
+            <div class="interest-count">GYM · RUNNING · CLIMBING</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into travel">
+            <div class="interest-name">TRAVEL</div>
+            <div class="interest-count">BACKPACK · EXPLORE · CULTURE</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into food">
+            <div class="interest-name">FOOD</div>
+            <div class="interest-count">COOK · RESTAURANTS · BAKE</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into gaming">
+            <div class="interest-name">GAMING</div>
+            <div class="interest-count">PC · CONSOLE · TABLETOP</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into books">
+            <div class="interest-name">BOOKS</div>
+            <div class="interest-count">SCI-FI · PHILOSOPHY · POETRY</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse people into nature">
+            <div class="interest-name">NATURE</div>
+            <div class="interest-count">HIKING · CAMPING · PLANTS</div>
+            <div class="interest-bar"></div>
+        </a>
+        <a href="browse.html" class="interest-card" onclick="return checkAuth(event)" data-tip="Browse all profiles">
+            <div class="interest-name">ALL_PROFILES</div>
+            <div class="interest-count">BROWSE · EVERYONE</div>
+            <div class="interest-bar"></div>
+        </a>
+    </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-banner">
+    <div class="section-tag" style="color:var(--secondary);">// READY_TO_CONNECT</div>
+    <h2>Join the registry.<br>Find your person.</h2>
+    <p>Open source, no dark patterns, no algorithms. Just real people looking for real connections.</p>
+    <a href="join.html" class="btn-primary" data-tip="Create your free account">$ CREATE_PROFILE →</a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-logo" data-tip="NAPKIN — Open Source Dating">NAPKIN</div>
+    <div class="footer-links">
+        <a href="https://github.com" target="_blank" data-tip="Source code on GitHub">GITHUB</a>
+        <a href="#" data-tip="Privacy Policy">PRIVACY</a>
+        <a href="#" data-tip="Terms of Service">TERMS</a>
+        <a href="#" data-tip="Community guidelines">GUIDELINES</a>
+    </div>
+    <div class="footer-copy">© 2026 — MIT_LICENSED · OPEN_SOURCE</div>
+</footer>
+
+<div id="tip"></div>
+
+<script>
+    // Terminal live feed
+    const EVENTS = [
+        { prompt: '$', text: '<span class="hi">alex_k</span> joined the registry <span class="muted">— Berlin · 27</span>' },
+        { prompt: '♥', text: '<span class="hi">sam_r</span> matched with <span class="hi">jordan_m</span>' },
+        { prompt: '$', text: '<span class="hi">riley_t</span> liked <span class="hi">casey_l</span>\'s profile' },
+        { prompt: '♥', text: '<span class="hi">morgan_p</span> matched with <span class="hi">drew_s</span>' },
+        { prompt: '$', text: '<span class="hi">avery_n</span> updated interests: <span class="muted">books · food · art</span>' },
+        { prompt: '$', text: '<span class="hi">quinn_b</span> joined the registry <span class="muted">— Barcelona · 32</span>' },
+        { prompt: '♥', text: '<span class="hi">taylor_v</span> matched with <span class="hi">blake_o</span>' },
+        { prompt: '$', text: '<span class="hi">skyler_h</span> liked <span class="hi">riley_t</span>\'s profile' },
+        { prompt: '$', text: 'new_user joined <span class="muted">— 12,847 active now</span>' },
+        { prompt: '♥', text: '<span class="hi">alex_k</span> matched with <span class="hi">morgan_p</span>' },
+    ];
+
+    const feed = document.getElementById('terminal-feed');
+    let idx = 0;
+
+    function addLine(event, withCursor) {
+        const line = document.createElement('div');
+        line.className = 'feed-line';
+        line.style.opacity = '0';
+        line.style.transition = 'opacity 0.4s';
+        line.innerHTML = `
+            <span class="feed-prompt">${event.prompt}</span>
+            <span class="feed-text">${event.text}${withCursor ? '<span class="feed-cursor"></span>' : ''}</span>`;
+        feed.appendChild(line);
+        requestAnimationFrame(() => { line.style.opacity = '1'; });
+        while (feed.children.length > 8) feed.removeChild(feed.firstChild);
+    }
+
+    EVENTS.slice(0, 5).forEach((e, i) => setTimeout(() => addLine(e, i === 4), i * 180));
+
+    setInterval(() => {
+        const prev = feed.querySelector('.feed-cursor');
+        if (prev) prev.remove();
+        idx = (idx + 5) % EVENTS.length;
+        addLine(EVENTS[idx], true);
+    }, 2500);
+
+    // Ticker
+    const items = ['MUSIC', 'TECH', 'ART', 'FITNESS', 'TRAVEL', 'FOOD', 'GAMING', 'BOOKS', 'NATURE', 'OPEN_SOURCE', 'NO_ALGORITHMS', 'REAL_CONNECTIONS'];
+    const ticker = document.getElementById('ticker');
+    [...items, ...items].forEach(t => {
+        const el = document.createElement('span');
+        el.className = 'ticker-item';
+        el.innerHTML = `<span>♥</span>${t}`;
+        ticker.appendChild(el);
+    });
+
+    // Tooltip
+    (function(){
+        const tip = document.getElementById('tip');
+        let cur = null;
+        document.addEventListener('mouseover', e => {
+            const el = e.target.closest('[data-tip]');
+            if (!el) return;
+            cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show');
+        });
+        document.addEventListener('mouseout', e => {
+            if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; }
+        });
+        document.addEventListener('mousemove', e => {
+            if (!cur) return;
+            const x = e.clientX + 14, y = e.clientY + 14;
+            tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+            tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+        });
+        document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+    })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script>
+    const { Client, Account } = Appwrite;
+    const _client = new Client()
+        .setEndpoint('https://fra.cloud.appwrite.io/v1')
+        .setProject('69c764d8003a944c2295');
+    const _account = new Account(_client);
+
+    _account.get().then(user => {
+        document.getElementById('btn-login').style.display = 'none';
+        document.getElementById('btn-join').style.display = 'none';
+        const btn = document.getElementById('btn-profile');
+        const name = user.name || user.email.split('@')[0];
+        btn.textContent = '[ ' + name.toUpperCase() + ' ]';
+        btn.style.display = 'inline-block';
+        window._loggedIn = true;
+    }).catch(() => { window._loggedIn = false; });
+
+    function checkAuth(e) {
+        if (window._loggedIn) return true;
+        e.preventDefault();
+        alert('⚠ You need to join or login before browsing profiles.');
+        return false;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAPKIN — Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f7; --text: #1a1a18; --secondary: #6b6b68;
+            --border: #e5e5e1; --accent: #d97757; --mono: 'IBM Plex Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg); color: var(--text); font-family: var(--mono);
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        /* NAV */
+        nav {
+            width: 100%; padding: 20px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-logo { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-decoration: none; }
+        .nav-back { font-size: 10px; color: var(--secondary); text-decoration: none; letter-spacing: 0.05em; }
+        .nav-back:hover { color: var(--accent); }
+
+        /* MAIN */
+        .auth-main {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 24px 20px; overflow: hidden;
+        }
+        .auth-wrap { width: 100%; max-width: 440px; }
+
+        /* HEADER */
+        .auth-header { margin-bottom: 24px; }
+        .auth-tag {
+            font-size: 10px; color: var(--accent); letter-spacing: 0.15em;
+            margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+        }
+        .auth-tag::before { content: ''; width: 24px; height: 1px; background: var(--accent); display: inline-block; }
+        .auth-title { font-size: 28px; font-weight: 600; line-height: 1.2; margin-bottom: 8px; }
+        .auth-title span { color: var(--accent); }
+        .auth-sub { font-size: 11px; color: var(--secondary); line-height: 1.7; }
+
+        /* TABS */
+        .auth-tabs {
+            display: flex; gap: 1px; background: var(--border);
+            border: 1px solid var(--border); margin-bottom: 20px;
+        }
+        .auth-tab {
+            flex: 1; padding: 13px; text-align: center; font-size: 11px; font-weight: 600;
+            cursor: pointer; background: var(--bg); color: var(--secondary);
+            letter-spacing: 0.06em; border: none; font-family: var(--mono); transition: background 0.15s, color 0.15s;
+        }
+        .auth-tab.active { background: var(--text); color: var(--bg); }
+        .auth-tab:hover:not(.active) { color: var(--accent); }
+
+        /* FORM */
+        .form-group { margin-bottom: 10px; }
+        .form-label { font-size: 9px; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 6px; display: block; }
+        .form-input {
+            width: 100%; padding: 11px 14px; border: 1px solid var(--border);
+            background: var(--bg); font-family: var(--mono); font-size: 12px;
+            color: var(--text); outline: none; transition: border-color 0.15s;
+        }
+        .form-input:focus { border-color: var(--accent); }
+        .form-input::placeholder { color: var(--secondary); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .form-submit {
+            width: 100%; padding: 15px; background: var(--text); color: var(--bg);
+            border: none; font-family: var(--mono); font-size: 12px; font-weight: 600;
+            cursor: pointer; margin-top: 6px; letter-spacing: 0.05em; transition: background 0.15s;
+        }
+        .form-submit:hover { background: var(--accent); }
+
+        /* INTEREST CHIPS */
+        .chip-label { font-size: 9px; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 8px; display: block; }
+        .chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .chip {
+            padding: 5px 11px; border: 1px solid var(--border); font-size: 9px;
+            cursor: pointer; color: var(--secondary); letter-spacing: 0.05em;
+            background: none; font-family: var(--mono); transition: all 0.12s;
+        }
+        .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+        /* FOOTER NOTE */
+        .form-note { font-size: 9px; color: var(--secondary); text-align: center; margin-top: 12px; line-height: 1.8; }
+        .form-note a { color: var(--accent); text-decoration: none; }
+        .form-note a:hover { text-decoration: underline; }
+
+        /* BOTTOM BAR */
+        .auth-footer {
+            border-top: 1px solid var(--border); padding: 16px 40px;
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 9px; color: var(--secondary); letter-spacing: 0.06em;
+        }
+        .auth-footer a { color: var(--secondary); text-decoration: none; }
+        .auth-footer a:hover { color: var(--accent); }
+
+        /* TOOLTIP */
+        #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
+        #tip.show { opacity: 1; }
+
+        @media (max-width: 540px) {
+            nav { padding: 16px 20px; }
+            .auth-footer { padding: 16px 20px; flex-direction: column; gap: 8px; text-align: center; }
+            .oauth-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">NAPKIN</a>
+    <a href="index.html" class="nav-back" data-tip="Back to home">← BACK_TO_HOME</a>
+</nav>
+
+<main class="auth-main">
+    <div class="auth-wrap">
+
+        <div class="auth-header">
+            <div class="auth-tag">NAPKIN — OPEN SOURCE DATING</div>
+            <h1 class="auth-title">Welcome<br><span>back.</span></h1>
+            <p class="auth-sub" id="auth-sub">Sign in to your account to continue.</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">LOGIN</button>
+            <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">SIGN_UP</button>
+        </div>
+
+        <!-- LOGIN -->
+        <form id="form-login" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label class="form-label">// EMAIL</label>
+                <input class="form-input" id="login-email" type="email" placeholder="you@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">// PASSWORD</label>
+                <input class="form-input" id="login-password" type="password" placeholder="••••••••" required>
+            </div>
+            <div id="login-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;"></div>
+            <button type="submit" class="form-submit" id="login-btn">$ LOGIN →</button>
+            <div class="form-note">
+                No account? <a href="#" onclick="switchTab('signup');return false;">CREATE_ONE →</a>
+                &nbsp;·&nbsp;
+                <a href="#" style="color:var(--secondary);">FORGOT_PASSWORD</a>
+            </div>
+        </form>
+
+        <!-- SIGNUP -->
+        <form id="form-signup" style="display:none;" onsubmit="handleSignup(event)">
+            <div class="form-group">
+                <label class="form-label">// EMAIL</label>
+                <input class="form-input" id="signup-email" type="email" placeholder="you@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">// PASSWORD</label>
+                <input class="form-input" id="signup-password" type="password" placeholder="min 8 characters" minlength="8" required>
+            </div>
+            <div id="signup-error" style="font-size:10px;color:#e05c5c;margin-top:8px;display:none;"></div>
+            <button type="submit" class="form-submit" id="signup-btn">$ CREATE_PROFILE →</button>
+            <div class="form-note">
+                By signing up you agree to our <a href="#">TERMS</a> and <a href="#">PRIVACY_POLICY</a>.<br>
+                Already have an account? <a href="#" onclick="switchTab('login');return false;">LOGIN →</a>
+            </div>
+        </form>
+
+    </div>
+</main>
+
+<footer class="auth-footer">
+    <span>NAPKIN — MIT_LICENSED · OPEN_SOURCE</span>
+    <div style="display:flex;gap:20px;">
+        <a href="#">PRIVACY</a>
+        <a href="#">TERMS</a>
+        <a href="https://github.com" target="_blank">GITHUB ↗</a>
+    </div>
+</footer>
+
+<div id="tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script>
+    const { Client, Account, ID } = Appwrite;
+
+    const client = new Client()
+        .setEndpoint('https://fra.cloud.appwrite.io/v1')
+        .setProject('69c764d8003a944c2295');
+
+    const account = new Account(client);
+
+    // Check if already logged in
+    account.get().then(() => {
+        window.location.href = 'profile.html';
+    }).catch(() => {});
+
+    function setLoading(btnId, loading) {
+        const btn = document.getElementById(btnId);
+        btn.disabled = loading;
+        btn.textContent = loading ? '...' : (btnId === 'login-btn' ? '$ LOGIN →' : '$ CREATE_PROFILE →');
+    }
+
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function hideError(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideError('login-error');
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        setLoading('login-btn', true);
+        try {
+            await account.createEmailPasswordSession(email, password);
+            window.location.href = 'profile.html';
+        } catch (err) {
+            showError('login-error', err.message || 'LOGIN_FAILED — check your credentials.');
+            setLoading('login-btn', false);
+        }
+    }
+
+    async function handleSignup(e) {
+        e.preventDefault();
+        hideError('signup-error');
+        const email = document.getElementById('signup-email').value.trim();
+        const password = document.getElementById('signup-password').value;
+        setLoading('signup-btn', true);
+        try {
+            await account.create(ID.unique(), email, password);
+            await account.createEmailPasswordSession(email, password);
+            window.location.href = 'profile.html';
+        } catch (err) {
+            showError('signup-error', err.message || 'SIGNUP_FAILED — try again.');
+            setLoading('signup-btn', false);
+        }
+    }
+
+    function switchTab(tab) {
+        const isLogin = tab === 'login';
+        document.getElementById('tab-login').classList.toggle('active', isLogin);
+        document.getElementById('tab-signup').classList.toggle('active', !isLogin);
+        document.getElementById('form-login').style.display = isLogin ? 'block' : 'none';
+        document.getElementById('form-signup').style.display = isLogin ? 'none' : 'block';
+        document.querySelector('.auth-title').innerHTML = isLogin ? 'Welcome<br><span>back.</span>' : 'Create your<br><span>profile.</span>';
+        document.getElementById('auth-sub').textContent = isLogin
+            ? 'Sign in to your account to continue.'
+            : 'Join the registry. Free, open source, no dark patterns.';
+    }
+
+    (function(){
+        const tip = document.getElementById('tip');
+        let cur = null;
+        document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
+        document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
+        document.addEventListener('mousemove', e => {
+            if (!cur) return;
+            const x = e.clientX + 14, y = e.clientY + 14;
+            tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+            tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+        });
+        document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+    })();
+</script>
+</body>
+</html>

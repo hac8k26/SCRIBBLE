@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAPKIN — Matches</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f9f9f7; --text: #1a1a18; --secondary: #6b6b68;
+            --border: #e5e5e1; --accent: #d97757; --mono: 'IBM Plex Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: var(--mono); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* NAV */
+        nav {
+            width: 100%; padding: 16px 32px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg); z-index: 10;
+        }
+        .nav-logo { font-size: 13px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; text-decoration: none; }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a { font-size: 11px; color: var(--secondary); text-decoration: none; letter-spacing: 0.05em; }
+        .nav-links a:hover, .nav-links a.active { color: var(--accent); }
+        .nav-user { font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 0.05em; }
+
+        /* LAYOUT */
+        .app { flex: 1; display: grid; grid-template-columns: 300px 1fr; overflow: hidden; }
+
+        /* SIDEBAR — MATCH LIST */
+        .match-sidebar { border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .sidebar-head {
+            padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar-title { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; }
+        .sidebar-count { font-size: 9px; color: var(--accent); letter-spacing: 0.08em; }
+        .match-list { overflow-y: auto; flex: 1; }
+        .match-item {
+            padding: 14px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px; cursor: pointer;
+            transition: background 0.12s;
+        }
+        .match-item:hover { background: #f1f1ee; }
+        .match-item.active { background: #fdf6f3; border-left: 2px solid var(--accent); }
+        .match-avatar { width: 40px; height: 40px; overflow: hidden; flex-shrink: 0; position: relative; }
+        .match-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.2); }
+        .match-online { position: absolute; bottom: 1px; right: 1px; width: 8px; height: 8px; border-radius: 50%; background: #4caf50; border: 1px solid var(--bg); }
+        .match-info { flex: 1; min-width: 0; }
+        .match-name { font-size: 11px; font-weight: 600; margin-bottom: 3px; }
+        .match-preview { font-size: 9px; color: var(--secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .match-meta { text-align: right; flex-shrink: 0; }
+        .match-time { font-size: 8px; color: var(--secondary); margin-bottom: 4px; }
+        .match-unread { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; margin-left: auto; }
+        .match-unread.hidden { visibility: hidden; }
+
+        /* NEW MATCHES ROW */
+        .new-matches-row { padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .new-matches-label { font-size: 9px; color: var(--accent); letter-spacing: 0.1em; margin-bottom: 10px; }
+        .new-matches-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+        .new-matches-scroll::-webkit-scrollbar { height: 3px; }
+        .new-matches-scroll::-webkit-scrollbar-thumb { background: var(--border); }
+        .new-match-bubble { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; }
+        .new-match-bubble img { width: 44px; height: 44px; object-fit: cover; border-radius: 50%; border: 2px solid var(--accent); filter: grayscale(0.15); display: block; }
+        .new-match-bubble span { font-size: 8px; color: var(--secondary); letter-spacing: 0.04em; }
+
+        /* CHAT AREA */
+        .chat-area { display: flex; flex-direction: column; overflow: hidden; }
+        .chat-header {
+            padding: 14px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            display: flex; align-items: center; gap: 14px;
+        }
+        .chat-header-avatar { width: 36px; height: 36px; overflow: hidden; flex-shrink: 0; }
+        .chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.2); }
+        .chat-header-info { flex: 1; }
+        .chat-header-name { font-size: 12px; font-weight: 600; }
+        .chat-header-status { font-size: 9px; color: var(--secondary); margin-top: 2px; letter-spacing: 0.05em; }
+        .chat-header-actions { display: flex; gap: 8px; }
+        .chat-icon-btn {
+            width: 32px; height: 32px; border: 1px solid var(--border); background: none;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--secondary);
+        }
+        .chat-icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+        .msg { display: flex; flex-direction: column; max-width: 68%; }
+        .msg.mine { align-self: flex-end; align-items: flex-end; }
+        .msg.theirs { align-self: flex-start; align-items: flex-start; }
+        .msg-bubble {
+            padding: 10px 14px; font-size: 11px; line-height: 1.6;
+            border: 1px solid var(--border);
+        }
+        .msg.mine .msg-bubble { background: var(--text); color: var(--bg); border-color: var(--text); }
+        .msg.theirs .msg-bubble { background: var(--bg); color: var(--text); }
+        .msg-time { font-size: 8px; color: var(--secondary); margin-top: 4px; letter-spacing: 0.05em; }
+
+        /* MATCH BANNER */
+        .match-banner {
+            margin: 0 24px 8px; padding: 14px 18px;
+            background: #fdf6f3; border: 1px solid var(--accent);
+            display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+        }
+        .match-banner-icon { font-size: 16px; }
+        .match-banner-text { font-size: 10px; color: var(--text); line-height: 1.6; }
+        .match-banner-text strong { color: var(--accent); }
+
+        /* INPUT */
+        .chat-input-row {
+            padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0;
+            display: flex; gap: 10px; align-items: center;
+        }
+        .chat-input {
+            flex: 1; padding: 11px 14px; border: 1px solid var(--border);
+            background: var(--bg); font-family: var(--mono); font-size: 11px;
+            color: var(--text); outline: none;
+        }
+        .chat-input:focus { border-color: var(--accent); }
+        .chat-input::placeholder { color: var(--secondary); }
+        .send-btn {
+            padding: 11px 20px; background: var(--text); color: var(--bg);
+            border: none; font-family: var(--mono); font-size: 11px; font-weight: 600;
+            cursor: pointer; white-space: nowrap;
+        }
+        .send-btn:hover { background: var(--accent); }
+
+        /* EMPTY STATE */
+        .chat-empty {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 16px; color: var(--secondary);
+        }
+        .chat-empty-icon { font-size: 32px; opacity: 0.3; }
+        .chat-empty-title { font-size: 13px; font-weight: 600; color: var(--text); }
+        .chat-empty-sub { font-size: 11px; color: var(--secondary); text-align: center; max-width: 280px; line-height: 1.7; }
+
+        /* TOOLTIP */
+        #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
+        #tip.show { opacity: 1; }
+
+        @media (max-width: 768px) {
+            .app { grid-template-columns: 1fr; }
+            .chat-area { display: none; }
+            .match-sidebar { border-right: none; }
+            body { overflow: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <a href="index.html" class="nav-logo">NAPKIN</a>
+    <span class="nav-user">[ alex_k ]</span>
+</nav>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="match-sidebar">
+        <div class="new-matches-row">
+            <div class="new-matches-label">// NEW_MATCHES</div>
+            <div class="new-matches-scroll" id="new-matches-scroll"></div>
+        </div>
+        <div class="sidebar-head">
+            <span class="sidebar-title">// CONVERSATIONS</span>
+            <span class="sidebar-count" id="conv-count"></span>
+        </div>
+        <div class="match-list" id="match-list"></div>
+    </aside>
+
+    <!-- CHAT -->
+    <div class="chat-area" id="chat-area">
+        <div class="chat-empty" id="chat-empty">
+            <div class="chat-empty-icon">♥</div>
+            <div class="chat-empty-title">SELECT_A_MATCH</div>
+            <div class="chat-empty-sub">Pick a conversation from the left to start chatting.</div>
+        </div>
+        <div id="chat-active" style="display:none; flex-direction:column; height:100%; overflow:hidden;">
+            <div class="chat-header">
+                <div class="chat-header-avatar"><img id="ch-avatar" src="" alt=""></div>
+                <div class="chat-header-info">
+                    <div class="chat-header-name" id="ch-name"></div>
+                    <div class="chat-header-status" id="ch-status"></div>
+                </div>
+                <div class="chat-header-actions">
+                    <button class="chat-icon-btn" data-tip="View profile">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </button>
+                    <button class="chat-icon-btn" data-tip="Unmatch">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="match-banner" id="ch-banner" style="display:none;">
+                <span class="match-banner-icon">♥</span>
+                <span class="match-banner-text">You matched with <strong id="ch-banner-name"></strong> — say something nice.</span>
+            </div>
+            <div class="chat-messages" id="ch-messages"></div>
+            <div class="chat-input-row">
+                <input class="chat-input" id="ch-input" type="text" placeholder="TYPE_A_MESSAGE..." onkeydown="handleKey(event)">
+                <button class="send-btn" onclick="sendMessage()" data-tip="Send message">SEND →</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div id="tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
+<script>
+    (function(){
+        const { Client, Account } = Appwrite;
+        const client = new Client()
+            .setEndpoint('https://fra.cloud.appwrite.io/v1')
+            .setProject('69c764d8003a944c2295');
+        new Account(client).get().catch(() => {
+            alert('⚠ You need to login or join before viewing matches.');
+            window.location.href = 'auth.html';
+        });
+    })();
+</script>
+<script>
+const MATCHES = [
+    {
+        id: 1, name: 'sam_r', age: 24, city: 'London', seed: 91, online: true,
+        preview: 'haha yeah that gallery was wild',
+        messages: [
+            { mine: false, text: 'hey! saw you\'re into art too', time: '2d ago' },
+            { mine: true,  text: 'yeah big time — you been to any good shows lately?', time: '2d ago' },
+            { mine: false, text: 'just went to this small one in shoreditch, it was actually really good', time: '1d ago' },
+            { mine: true,  text: 'oh nice, what kind of work?', time: '1d ago' },
+            { mine: false, text: 'haha yeah that gallery was wild', time: '3h ago' },
+        ],
+        unread: 1, newMatch: false
+    },
+    {
+        id: 2, name: 'morgan_p', age: 25, city: 'Paris', seed: 77, online: true,
+        preview: 'matched just now ♥',
+        messages: [],
+        unread: 0, newMatch: true
+    },
+    {
+        id: 3, name: 'riley_t', age: 26, city: 'Amsterdam', seed: 150, online: false,
+        preview: 'let me know if you want to grab coffee',
+        messages: [
+            { mine: false, text: 'hey, your profile is really interesting', time: '5d ago' },
+            { mine: true,  text: 'thanks! love your bio, the marathon thing is impressive', time: '5d ago' },
+            { mine: false, text: 'haha it\'s mostly suffering but worth it', time: '4d ago' },
+            { mine: true,  text: 'lol fair enough. you based in amsterdam full time?', time: '4d ago' },
+            { mine: false, text: 'let me know if you want to grab coffee', time: '2d ago' },
+        ],
+        unread: 0, newMatch: false
+    },
+    {
+        id: 4, name: 'taylor_v', age: 27, city: 'Seoul', seed: 99, online: true,
+        preview: 'matched just now ♥',
+        messages: [],
+        unread: 0, newMatch: true
+    },
+    {
+        id: 5, name: 'jordan_m', age: 29, city: 'NYC', seed: 33, online: false,
+        preview: 'that riff you shared was 🔥',
+        messages: [
+            { mine: false, text: 'fellow music person, nice', time: '1w ago' },
+            { mine: true,  text: 'haha yeah, what do you play?', time: '1w ago' },
+            { mine: false, text: 'guitar mostly, some keys. you?', time: '1w ago' },
+            { mine: true,  text: 'i just listen tbh, but obsessively', time: '6d ago' },
+            { mine: false, text: 'that riff you shared was 🔥', time: '3d ago' },
+        ],
+        unread: 2, newMatch: false
+    },
+];
+
+let activeId = null;
+
+function renderSidebar() {
+    // new matches bubbles
+    const scroll = document.getElementById('new-matches-scroll');
+    const newOnes = MATCHES.filter(m => m.newMatch);
+    newOnes.forEach(m => {
+        const b = document.createElement('div');
+        b.className = 'new-match-bubble';
+        b.innerHTML = `<img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""><span>${m.name}</span>`;
+        b.onclick = () => openChat(m.id);
+        scroll.appendChild(b);
+    });
+
+    // conversation list
+    const list = document.getElementById('match-list');
+    document.getElementById('conv-count').textContent = `${MATCHES.length}_MATCHES`;
+    MATCHES.forEach(m => {
+        const item = document.createElement('div');
+        item.className = 'match-item';
+        item.id = `mi-${m.id}`;
+        item.innerHTML = `
+            <div class="match-avatar">
+                <img src="https://picsum.photos/seed/${m.seed}/80/80" alt="">
+                ${m.online ? '<div class="match-online"></div>' : ''}
+            </div>
+            <div class="match-info">
+                <div class="match-name">${m.name}</div>
+                <div class="match-preview">${m.preview}</div>
+            </div>
+            <div class="match-meta">
+                <div class="match-time">${m.newMatch ? 'now' : m.messages.length ? m.messages.at(-1).time : ''}</div>
+                <div class="match-unread ${m.unread ? '' : 'hidden'}">${m.unread || ''}</div>
+            </div>`;
+        item.onclick = () => openChat(m.id);
+        list.appendChild(item);
+    });
+}
+
+function openChat(id) {
+    const m = MATCHES.find(x => x.id === id);
+    if (!m) return;
+    activeId = id;
+
+    // sidebar active state
+    document.querySelectorAll('.match-item').forEach(el => el.classList.remove('active'));
+    document.getElementById(`mi-${id}`).classList.add('active');
+
+    // clear unread
+    m.unread = 0;
+    const badge = document.querySelector(`#mi-${id} .match-unread`);
+    if (badge) badge.classList.add('hidden');
+
+    // populate header
+    document.getElementById('ch-avatar').src = `https://picsum.photos/seed/${m.seed}/80/80`;
+    document.getElementById('ch-name').textContent = m.name;
+    document.getElementById('ch-status').textContent = m.online ? '● ONLINE · ' + m.city : '○ OFFLINE · ' + m.city;
+
+    // banner for new matches
+    const banner = document.getElementById('ch-banner');
+    if (m.newMatch) {
+        document.getElementById('ch-banner-name').textContent = m.name;
+        banner.style.display = 'flex';
+    } else {
+        banner.style.display = 'none';
+    }
+
+    // messages
+    const msgs = document.getElementById('ch-messages');
+    msgs.innerHTML = '';
+    if (m.messages.length === 0) {
+        msgs.innerHTML = `<div style="text-align:center;font-size:10px;color:var(--secondary);margin:auto;padding:32px 0;">
+            No messages yet — say hello!
+        </div>`;
+    } else {
+        m.messages.forEach(msg => {
+            const el = document.createElement('div');
+            el.className = `msg ${msg.mine ? 'mine' : 'theirs'}`;
+            el.innerHTML = `<div class="msg-bubble">${msg.text}</div><div class="msg-time">${msg.time}</div>`;
+            msgs.appendChild(el);
+        });
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    document.getElementById('chat-empty').style.display = 'none';
+    const active = document.getElementById('chat-active');
+    active.style.display = 'flex';
+}
+
+function sendMessage() {
+    const input = document.getElementById('ch-input');
+    const text = input.value.trim();
+    if (!text || activeId === null) return;
+    const m = MATCHES.find(x => x.id === activeId);
+    const msg = { mine: true, text, time: 'just now' };
+    m.messages.push(msg);
+    m.preview = text;
+    m.newMatch = false;
+    document.getElementById('ch-banner').style.display = 'none';
+
+    const msgs = document.getElementById('ch-messages');
+    // clear empty state if present
+    const empty = msgs.querySelector('div[style]');
+    if (empty) empty.remove();
+
+    const el = document.createElement('div');
+    el.className = 'msg mine';
+    el.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">just now</div>`;
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    // update sidebar preview
+    document.querySelector(`#mi-${activeId} .match-preview`).textContent = text;
+    input.value = '';
+}
+
+function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
+
+// Tooltip
+(function(){
+    const tip = document.getElementById('tip');
+    let cur = null;
+    document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
+    document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
+    document.addEventListener('mousemove', e => {
+        if (!cur) return;
+        const x = e.clientX + 14, y = e.clientY + 14;
+        tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+        tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+    });
+    document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+})();
+
+renderSidebar();
+</script>
+</body>
+</html>
