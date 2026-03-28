@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NAPKIN — Browse Profiles</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -25,6 +26,10 @@
         .nav-links a:hover, .nav-links a.active { color: var(--accent); }
         .nav-cta { padding: 8px 18px; border: 1px solid var(--text); background: none; font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text); text-decoration: none; }
         .nav-cta:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .nav-icon-btn { color: var(--secondary); text-decoration: none; padding: 6px; display: flex; align-items: center; }
+        .nav-icon-btn:hover { color: var(--accent); }
+        .nav-name-btn { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; letter-spacing: 0.05em; padding: 6px 10px; border: 1px solid var(--accent); }
+        .nav-name-btn:hover { background: var(--accent); color: #fff; }
 
         /* NOTIFICATION BELL */
         .nav-bell { position: relative; display: none; cursor: pointer; text-decoration: none; color: var(--text); padding: 6px; }
@@ -192,46 +197,23 @@
         @media (max-width: 540px) {
             .result-count { display: none; }
             .profiles-grid { grid-template-columns: repeat(2, 1fr); }
-            .nav-desktop { display: none !important; }
-            .nav-hamburger { display: flex !important; }
+            .nav-name-btn { font-size: 10px; padding: 5px 8px; }
+            .nav-icon-btn svg { width: 14px; height: 14px; }
         }
-
-        /* HAMBURGER MENU */
-        .nav-hamburger {
-            display: none; position: relative; align-items: center; gap: 10px;
-        }
-        .hamburger-btn {
-            background: none; border: 1px solid var(--border); padding: 7px 10px;
-            cursor: pointer; color: var(--text); display: flex; align-items: center;
-            font-family: var(--mono);
-        }
-        .hamburger-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .hamburger-menu {
-            position: absolute; top: calc(100% + 10px); right: 0;
-            background: var(--bg); border: 1px solid var(--border);
-            display: none; flex-direction: column; min-width: 180px; z-index: 9999;
-        }
-        .hamburger-menu.open { display: flex; }
-        .hamburger-menu a {
-            padding: 13px 18px; font-size: 11px; font-weight: 600;
-            color: var(--text); text-decoration: none; letter-spacing: 0.05em;
-            border-bottom: 1px solid var(--border);
-        }
-        .hamburger-menu a:last-child { border-bottom: none; }
-        .hamburger-menu a:hover { color: var(--accent); background: #f1f1ee; }
     </style>
 </head>
 <body>
 
 <nav>
     <a href="index.html" class="nav-logo" data-tip="Back to home">NAPKIN</a>
-
-    <!-- DESKTOP NAV -->
-    <div class="nav-desktop" style="display:flex;align-items:center;gap:12px;">
-        <a href="matches.html" class="nav-cta" id="nav-matches" style="display:none;" data-tip="View your matches">MY_MATCHES →</a>
-        <a href="likes.html" class="nav-cta" id="nav-likes" style="display:none;" data-tip="Profiles you liked">MY_LIKES →</a>
-        <a href="profile.html" class="nav-cta" id="nav-profile" style="display:none;" data-tip="Your profile">MY_PROFILE →</a>
-        <!-- NOTIFICATION BELL -->
+    <div style="display:flex;align-items:center;gap:10px;">
+        <a href="matches.html" class="nav-icon-btn" id="nav-matches" style="display:none;" data-tip="My Matches">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </a>
+        <a href="likes.html" class="nav-icon-btn" id="nav-likes" style="display:none;" data-tip="My Likes">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </a>
+        <a href="profile.html" class="nav-name-btn" id="nav-profile" style="display:none;" data-tip="My Profile">[ <span id="nav-username">PROFILE</span> ]</a>
         <div class="nav-bell" id="nav-bell" onclick="toggleNotif(event)">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             <div class="bell-badge" id="bell-badge"></div>
@@ -241,27 +223,6 @@
             </div>
         </div>
         <a href="join.html" class="nav-cta" id="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
-    </div>
-
-    <!-- MOBILE NAV -->
-    <div class="nav-hamburger" id="nav-hamburger">
-        <div class="nav-bell" id="nav-bell-mobile" style="display:none;" onclick="toggleNotif(event)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <div class="bell-badge" id="bell-badge-mobile"></div>
-            <div class="notif-dropdown" id="notif-dropdown-mobile" style="right:0;">
-                <div class="notif-header">// NOTIFICATIONS</div>
-                <div id="notif-list-mobile"><div class="notif-empty">NO_NEW_NOTIFICATIONS</div></div>
-            </div>
-        </div>
-        <button class="hamburger-btn" onclick="toggleHamburger(event)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-        <div class="hamburger-menu" id="hamburger-menu">
-            <a href="matches.html" id="hm-matches" style="display:none;">MY_MATCHES →</a>
-            <a href="likes.html" id="hm-likes" style="display:none;">MY_LIKES →</a>
-            <a href="profile.html" id="hm-profile" style="display:none;">MY_PROFILE →</a>
-            <a href="join.html" id="hm-login">LOGIN / JOIN →</a>
-        </div>
     </div>
 </nav>
 
@@ -334,17 +295,13 @@
     sb.auth.getSession().then(({ data: { session } }) => {
         if (!session) { document.getElementById('auth-gate').classList.add('show'); return; }
         currentUser = session.user;
+        const uname = (currentUser.user_metadata?.name || currentUser.email.split('@')[0]).toUpperCase();
+        document.getElementById('nav-username').textContent = uname;
         document.getElementById('nav-cta').style.display = 'none';
-        document.getElementById('nav-matches').style.display = 'inline-block';
-        document.getElementById('nav-likes').style.display = 'inline-block';
+        document.getElementById('nav-matches').style.display = 'flex';
+        document.getElementById('nav-likes').style.display = 'flex';
         document.getElementById('nav-profile').style.display = 'inline-block';
         document.getElementById('nav-bell').style.display = 'block';
-        // mobile
-        document.getElementById('nav-bell-mobile').style.display = 'block';
-        document.getElementById('hm-matches').style.display = 'block';
-        document.getElementById('hm-likes').style.display = 'block';
-        document.getElementById('hm-profile').style.display = 'block';
-        document.getElementById('hm-login').style.display = 'none';
         loadProfiles();
         loadNotifications();
         setInterval(loadNotifications, 15000); // poll every 15s
@@ -487,31 +444,20 @@
         setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
     }
 
-    function toggleHamburger(e) {
-        e.stopPropagation();
-        document.getElementById('hamburger-menu').classList.toggle('open');
-    }
-    document.addEventListener('click', () => {
-        document.getElementById('hamburger-menu')?.classList.remove('open');
-        document.getElementById('notif-dropdown')?.classList.remove('open');
-        document.getElementById('notif-dropdown-mobile')?.classList.remove('open');
-    });
-
     function toggleNotif(e) {
         e.stopPropagation();
-        const isMobile = e.currentTarget.id === 'nav-bell-mobile';
-        const id = isMobile ? 'notif-dropdown-mobile' : 'notif-dropdown';
-        const dropdown = document.getElementById(id);
+        const dropdown = document.getElementById('notif-dropdown');
         const wasOpen = dropdown.classList.contains('open');
         dropdown.classList.toggle('open');
-        // mark as seen when opening
         if (!wasOpen) {
             _lastChecked = new Date().toISOString();
             localStorage.setItem('notif_checked', _lastChecked);
             document.getElementById('bell-badge').classList.remove('show');
-            document.getElementById('bell-badge-mobile').classList.remove('show');
         }
     }
+    document.addEventListener('click', () => {
+        document.getElementById('notif-dropdown')?.classList.remove('open');
+    });
 
     function timeAgo(iso) {
         const diff = Date.now() - new Date(iso).getTime();
@@ -593,15 +539,9 @@
                     <div class="notif-time">${timeAgo(n.time)}</div>
                 </div>`).join('');
             list.innerHTML = html;
-            // sync mobile
-            document.getElementById('bell-badge-mobile').textContent = badge.textContent;
-            document.getElementById('bell-badge-mobile').classList.add('show');
-            document.getElementById('notif-list-mobile').innerHTML = html;
         } else {
             badge.classList.remove('show');
-            document.getElementById('bell-badge-mobile').classList.remove('show');
             list.innerHTML = '<div class="notif-empty">NO_NEW_NOTIFICATIONS</div>';
-            document.getElementById('notif-list-mobile').innerHTML = '<div class="notif-empty">NO_NEW_NOTIFICATIONS</div>';
         }
     }
 
