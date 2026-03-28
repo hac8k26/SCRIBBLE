@@ -305,8 +305,10 @@
     }
 
     async function loadProfileData(userId) {
-        const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
+        const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+        console.log('profile data:', data, 'error:', error);
         if (!data) return;
+        console.log('avatar_url from DB:', data.avatar_url);
         setAvatar(data.avatar_url ? data.avatar_url + '?v=' + Date.now() : null, (data.name || '?')[0].toUpperCase());
         document.getElementById('view-name').textContent = data.name || '—';
         document.getElementById('view-age').textContent = data.age || '—';
