@@ -245,7 +245,7 @@
         try {
             const res = await databases.listDocuments(DB_ID, COL_ID, [Query.limit(100)]);
             console.log('Total docs from DB:', res.total, res.documents);
-            PROFILES = res.documents.filter(d => d.userId !== currentUser.$id);
+            PROFILES = res.documents.filter(d => d.userId && d.userId !== currentUser.$id);
             console.log('After filter (currentUser.$id=' + currentUser.$id + '):', PROFILES.length, PROFILES);
             renderProfiles(PROFILES);
         } catch (err) {
