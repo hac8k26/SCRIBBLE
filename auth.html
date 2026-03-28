@@ -206,7 +206,7 @@
 
     function showError(id, msg) {
         const el = document.getElementById(id);
-        el.textContent = msg;
+        el.innerHTML = msg;
         el.style.display = 'block';
     }
 
@@ -240,7 +240,11 @@
             await account.createEmailPasswordSession({ email, password });
             window.location.href = 'profile.html';
         } catch (err) {
-            showError('signup-error', err.message || 'SIGNUP_FAILED — try again.');
+            if (err.code === 409) {
+                showError('signup-error', 'ACCOUNT_EXISTS — <a href="#" onclick="switchTab(\'login\');return false;" style="color:var(--accent);">LOGIN_INSTEAD →</a>');
+            } else {
+                showError('signup-error', err.message || 'SIGNUP_FAILED — try again.');
+            }
             setLoading('signup-btn', false);
         }
     }
