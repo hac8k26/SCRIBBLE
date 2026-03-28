@@ -95,12 +95,26 @@
         .card-avatar { width: 48px; height: 48px; flex-shrink: 0; overflow: hidden; position: relative; }
         .card-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.2); }
         .card-online { position: absolute; bottom: 2px; right: 2px; width: 7px; height: 7px; border-radius: 50%; background: #4caf50; border: 1px solid var(--bg); }
+        .letter-avatar {
+            width: 48px; height: 48px; flex-shrink: 0;
+            background: var(--text); color: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 600; font-family: var(--mono);
+            border: 1px solid var(--border);
+        }
+        .letter-avatar.sm {
+            width: 40px; height: 40px; font-size: 15px;
+        }
+        .letter-avatar.lg {
+            width: 100%; height: 100%; font-size: 48px;
+        }
 
         /* MODAL */
         .modal-backdrop { position: fixed; inset: 0; background: rgba(26,26,24,0.6); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
         .modal-backdrop.open { display: flex; }
         .modal { background: var(--bg); border: 1px solid var(--border); max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; position: relative; }
-        .modal-img { aspect-ratio: 3/4; overflow: hidden; }
+        .modal-img { aspect-ratio: 3/4; overflow: hidden; background: var(--text); display: flex; align-items: center; justify-content: center; }
+        .modal-img .letter-avatar.lg { background: var(--text); color: var(--bg); font-size: 80px; width: 100%; height: 100%; }
         .modal-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .modal-body { padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; }
         .modal-name { font-size: 20px; font-weight: 600; }
@@ -221,7 +235,7 @@
 <div class="modal-backdrop" id="modal" onclick="closeModal(event)">
     <div class="modal" id="modal-inner">
         <button class="modal-close" onclick="closeModal(null, true)" data-tip="Close">✕</button>
-        <div class="modal-img"><img id="modal-img" src="" alt=""></div>
+        <div class="modal-img" id="modal-img-wrap"></div>
         <div class="modal-body">
             <div>
                 <div class="modal-name" id="modal-name"></div>
@@ -293,6 +307,11 @@
         renderProfiles(PROFILES);
     }
 
+    function letterAvatar(name, cls = '') {
+        const letter = (name || '?')[0].toUpperCase();
+        return `<div class="letter-avatar ${cls}">${letter}</div>`;
+    }
+
     function renderProfiles(list) {
         const grid = document.getElementById('profiles-grid');
         document.getElementById('result-count').textContent = `${list.length}_PROFILES`;
@@ -302,7 +321,6 @@
             return;
         }
         list.forEach(p => {
-            const seed = Math.abs(p.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
             const card = document.createElement('div');
             card.className = 'profile-card';
             card.innerHTML = `
@@ -311,9 +329,7 @@
                     <div class="card-age">AGE · ${p.age}</div>
                     <div class="card-college">${p.college || '—'}</div>
                 </div>
-                <div class="card-avatar">
-                    <img src="https://picsum.photos/seed/${seed}/80/80" loading="lazy" alt="">
-                </div>`;
+                ${letterAvatar(p.name)}`;
             card.addEventListener('click', () => openModal(p));
             grid.appendChild(card);
         });
@@ -330,8 +346,7 @@
 
     function openModal(p) {
         activeProfile = p;
-        const seed = Math.abs(p.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
-        document.getElementById('modal-img').src = `https://picsum.photos/seed/${seed}/400/600`;
+        document.getElementById('modal-img-wrap').innerHTML = letterAvatar(p.name, 'lg');
         document.getElementById('modal-name').textContent = p.name;
         document.getElementById('modal-meta').innerHTML = `AGE: ${p.age}<br>COLLEGE: ${p.college || '—'}`;
         document.getElementById('modal-bio').textContent = p.bio || '';
@@ -404,45 +419,59 @@
         return Math.floor(h / 24) + 'd ago';
     }
 
-    let _lastChecked = localStorage.getItem('notif_checked') || new Date(0).toISOString();
+    let _lastChecked = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(); // last 7 days
 
     async function loadNotifications() {
-        // Get matches where I am user2 (someone messaged me) created after last check
+        const notifs = [];
+
+        // New matches where I am user2 (someone initiated contact with me)
         const { data: newMatches } = await sb.from('matches')
-            .select('id, user1, profiles!matches_user1_fkey(name), created_at')
+            .select('id, user1, created_at')
             .eq('user2', currentUser.id)
             .gt('created_at', _lastChecked);
 
-        // Get new messages in my matches sent by others
+        if (newMatches?.length) {
+            // get names of user1s
+            const ids = newMatches.map(m => m.user1);
+            const { data: senders } = await sb.from('profiles').select('id, name').in('id', ids);
+            newMatches.forEach(m => {
+                const sender = senders?.find(s => s.id === m.user1);
+                notifs.push({
+                    text: `<span class="notif-name">${sender?.name || 'Someone'}</span> sent you a message`,
+                    time: m.created_at
+                });
+            });
+        }
+
+        // New messages in my matches from others
         const { data: myMatches } = await sb.from('matches')
             .select('id')
             .or(`user1.eq.${currentUser.id},user2.eq.${currentUser.id}`);
 
         const matchIds = (myMatches || []).map(m => m.id);
-        let newMessages = [];
         if (matchIds.length > 0) {
-            const { data } = await sb.from('messages')
-                .select('id, text, sender_id, created_at, match_id, profiles!messages_sender_id_fkey(name)')
+            const { data: newMsgs } = await sb.from('messages')
+                .select('id, text, sender_id, created_at')
                 .in('match_id', matchIds)
                 .neq('sender_id', currentUser.id)
                 .gt('created_at', _lastChecked)
                 .order('created_at', { ascending: false })
                 .limit(10);
-            newMessages = data || [];
+
+            if (newMsgs?.length) {
+                const senderIds = [...new Set(newMsgs.map(m => m.sender_id))];
+                const { data: senders } = await sb.from('profiles').select('id, name').in('id', senderIds);
+                newMsgs.forEach(msg => {
+                    const sender = senders?.find(s => s.id === msg.sender_id);
+                    notifs.push({
+                        text: `<span class="notif-name">${sender?.name || 'Someone'}</span>: ${msg.text.slice(0, 40)}${msg.text.length > 40 ? '...' : ''}`,
+                        time: msg.created_at
+                    });
+                });
+            }
         }
 
-        const notifs = [
-            ...(newMatches || []).map(m => ({
-                text: `<span class="notif-name">${m['profiles!matches_user1_fkey']?.name || 'Someone'}</span> sent you a message`,
-                time: m.created_at,
-                href: 'matches.html'
-            })),
-            ...newMessages.map(msg => ({
-                text: `<span class="notif-name">${msg['profiles!messages_sender_id_fkey']?.name || 'Someone'}</span>: ${msg.text.slice(0, 40)}${msg.text.length > 40 ? '...' : ''}`,
-                time: msg.created_at,
-                href: 'matches.html'
-            }))
-        ].sort((a, b) => new Date(b.time) - new Date(a.time));
+        notifs.sort((a, b) => new Date(b.time) - new Date(a.time));
 
         const badge = document.getElementById('bell-badge');
         const list = document.getElementById('notif-list');
@@ -451,7 +480,7 @@
             badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
             badge.classList.add('show');
             list.innerHTML = notifs.map(n => `
-                <div class="notif-item" onclick="window.location.href='${n.href}'">
+                <div class="notif-item" onclick="window.location.href='matches.html'">
                     <div>${n.text}</div>
                     <div class="notif-time">${timeAgo(n.time)}</div>
                 </div>`).join('');

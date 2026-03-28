@@ -47,6 +47,18 @@
         .match-avatar { width: 40px; height: 40px; overflow: hidden; flex-shrink: 0; position: relative; }
         .match-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.2); }
         .match-online { position: absolute; bottom: 1px; right: 1px; width: 8px; height: 8px; border-radius: 50%; background: #4caf50; border: 1px solid var(--bg); }
+        .letter-avatar {
+            width: 40px; height: 40px; flex-shrink: 0;
+            background: var(--text); color: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 600; font-family: var(--mono);
+        }
+        .letter-avatar.bubble {
+            width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--accent); font-size: 16px;
+        }
+        .letter-avatar.header {
+            width: 36px; height: 36px; font-size: 14px;
+        }
         .match-info { flex: 1; min-width: 0; }
         .match-name { font-size: 11px; font-weight: 600; margin-bottom: 3px; }
         .match-preview { font-size: 9px; color: var(--secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -62,7 +74,7 @@
         .new-matches-scroll::-webkit-scrollbar { height: 3px; }
         .new-matches-scroll::-webkit-scrollbar-thumb { background: var(--border); }
         .new-match-bubble { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; }
-        .new-match-bubble img { width: 44px; height: 44px; object-fit: cover; border-radius: 50%; border: 2px solid var(--accent); filter: grayscale(0.15); display: block; }
+        .new-match-bubble .letter-avatar.bubble { display: flex; }
         .new-match-bubble span { font-size: 8px; color: var(--secondary); letter-spacing: 0.04em; }
 
         /* CHAT AREA */
@@ -72,7 +84,6 @@
             display: flex; align-items: center; gap: 14px;
         }
         .chat-header-avatar { width: 36px; height: 36px; overflow: hidden; flex-shrink: 0; }
-        .chat-header-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(0.2); }
         .chat-header-info { flex: 1; }
         .chat-header-name { font-size: 12px; font-weight: 600; }
         .chat-header-status { font-size: 9px; color: var(--secondary); margin-top: 2px; letter-spacing: 0.05em; }
@@ -197,7 +208,7 @@
         </div>
         <div id="chat-active" style="display:none; flex-direction:column; height:100%; overflow:hidden;">
             <div class="chat-header">
-                <div class="chat-header-avatar"><img id="ch-avatar" src="" alt=""></div>
+                <div class="chat-header-avatar" id="ch-avatar"></div>
                 <div class="chat-header-info">
                     <div class="chat-header-name" id="ch-name"></div>
                     <div class="chat-header-status" id="ch-status"></div>
@@ -290,6 +301,11 @@
         return Math.floor(h / 24) + 'd ago';
     }
 
+    function letterAvatar(name, cls = '') {
+        const letter = (name || '?')[0].toUpperCase();
+        return `<div class="letter-avatar ${cls}">${letter}</div>`;
+    }
+
     function renderSidebar() {
         const list = document.getElementById('match-list');
         const scroll = document.getElementById('new-matches-scroll');
@@ -299,7 +315,7 @@
         MATCHES.forEach(m => {
             const b = document.createElement('div');
             b.className = 'new-match-bubble';
-            b.innerHTML = `<img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""><span>${m.name.split(' ')[0].toLowerCase()}</span>`;
+            b.innerHTML = `${letterAvatar(m.name, 'bubble')}<span>${m.name.split(' ')[0].toLowerCase()}</span>`;
             b.onclick = () => openChat(m.matchId);
             scroll.appendChild(b);
 
@@ -307,7 +323,7 @@
             item.className = 'match-item';
             item.id = `mi-${m.matchId}`;
             item.innerHTML = `
-                <div class="match-avatar"><img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""></div>
+                <div class="match-avatar">${letterAvatar(m.name)}</div>
                 <div class="match-info">
                     <div class="match-name">${m.name}</div>
                     <div class="match-preview">${m.preview}</div>
@@ -333,7 +349,7 @@
         document.querySelectorAll('.match-item').forEach(el => el.classList.remove('active'));
         document.getElementById(`mi-${matchId}`)?.classList.add('active');
 
-        document.getElementById('ch-avatar').src = `https://picsum.photos/seed/${m.seed}/80/80`;
+        document.getElementById('ch-avatar').innerHTML = letterAvatar(m.name, 'header');
         document.getElementById('ch-name').textContent = m.name;
         document.getElementById('ch-status').textContent = m.college || '';
         document.getElementById('ch-banner').style.display = 'none';
