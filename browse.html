@@ -440,21 +440,24 @@
     async function loadNotifications() {
         const notifs = [];
 
-        // New matches where I am user2 (someone initiated contact with me)
-        const { data: newMatches } = await sb.from('matches')
-            .select('id, user1, created_at')
+        // All matches where I am user2 (someone liked or messaged me)
+        const { data: inbound } = await sb.from('matches')
+            .select('id, user1, last_message, created_at')
             .eq('user2', currentUser.id)
             .gt('created_at', _lastChecked);
 
-        if (newMatches?.length) {
-            // get names of user1s
-            const ids = newMatches.map(m => m.user1);
+        if (inbound?.length) {
+            const ids = inbound.map(m => m.user1);
             const { data: senders } = await sb.from('profiles').select('id, name').in('id', ids);
-            newMatches.forEach(m => {
+            inbound.forEach(m => {
                 const sender = senders?.find(s => s.id === m.user1);
+                const isMsg = m.last_message;
                 notifs.push({
-                    text: `<span class="notif-name">${sender?.name || 'Someone'}</span> sent you a message`,
-                    time: m.created_at
+                    text: isMsg
+                        ? `<span class="notif-name">${sender?.name || 'Someone'}</span> sent you a message`
+                        : `<span class="notif-name">${sender?.name || 'Someone'}</span> liked your profile ♥`,
+                    time: m.created_at,
+                    href: isMsg ? 'matches.html' : 'likes.html'
                 });
             });
         }
@@ -481,7 +484,8 @@
                     const sender = senders?.find(s => s.id === msg.sender_id);
                     notifs.push({
                         text: `<span class="notif-name">${sender?.name || 'Someone'}</span>: ${msg.text.slice(0, 40)}${msg.text.length > 40 ? '...' : ''}`,
-                        time: msg.created_at
+                        time: msg.created_at,
+                        href: 'matches.html'
                     });
                 });
             }
@@ -496,7 +500,7 @@
             badge.textContent = notifs.length > 9 ? '9+' : notifs.length;
             badge.classList.add('show');
             list.innerHTML = notifs.map(n => `
-                <div class="notif-item" onclick="window.location.href='matches.html'">
+                <div class="notif-item" onclick="window.location.href='${n.href}'">
                     <div>${n.text}</div>
                     <div class="notif-time">${timeAgo(n.time)}</div>
                 </div>`).join('');
