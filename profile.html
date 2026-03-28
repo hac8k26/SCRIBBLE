@@ -108,6 +108,34 @@
         #tip { position: fixed; pointer-events: none; z-index: 99999; background: var(--text); color: var(--bg); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; padding: 5px 9px; white-space: nowrap; opacity: 0; transition: opacity 0.15s; }
         #tip.show { opacity: 1; }
 
+        /* DELETE CONFIRM DIALOG */
+        #delete-dialog {
+            position: fixed; inset: 0; background: rgba(26,26,24,0.65); z-index: 99995;
+            display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        #delete-dialog.show { display: flex; }
+        .delete-box {
+            background: var(--bg); border: 1px solid var(--border); border-left: 3px solid #e05c5c;
+            padding: 36px 40px; max-width: 400px; width: 100%;
+            display: flex; flex-direction: column; gap: 16px;
+        }
+        .delete-icon { font-size: 22px; }
+        .delete-title { font-size: 14px; font-weight: 600; letter-spacing: 0.03em; }
+        .delete-sub { font-size: 10px; color: var(--secondary); line-height: 1.8; }
+        .delete-actions { display: flex; gap: 8px; margin-top: 4px; }
+        .delete-confirm {
+            flex: 1; padding: 12px; background: #e05c5c; color: #fff;
+            border: none; font-family: var(--mono); font-size: 11px; font-weight: 600;
+            cursor: pointer; letter-spacing: 0.05em;
+        }
+        .delete-confirm:hover { background: #c94040; }
+        .delete-cancel {
+            flex: 1; padding: 12px; background: none; color: var(--text);
+            border: 1px solid var(--border); font-family: var(--mono); font-size: 11px;
+            font-weight: 600; cursor: pointer; letter-spacing: 0.05em;
+        }
+        .delete-cancel:hover { border-color: var(--text); }
+
         @media (max-width: 540px) {
             nav { padding: 16px 20px; }
             .profile-main { padding: 32px 20px; }
@@ -160,6 +188,18 @@
 </main>
 
 <div id="tip"></div>
+
+<div id="delete-dialog">
+    <div class="delete-box">
+        <div class="delete-icon">⚠</div>
+        <div class="delete-title">DELETE_ACCOUNT</div>
+        <div class="delete-sub">Are you sure? This will permanently delete your account and all your data. This action cannot be undone.</div>
+        <div class="delete-actions">
+            <button class="delete-confirm" onclick="doDelete()">$ YES_DELETE →</button>
+            <button class="delete-cancel" onclick="document.getElementById('delete-dialog').classList.remove('show')">CANCEL</button>
+        </div>
+    </div>
+</div>
 
 <!-- AUTH GUARD MODAL -->
 <div class="auth-modal-backdrop" id="auth-modal" onclick="if(event.target===this)this.classList.remove('open')">
@@ -222,11 +262,13 @@
     }
 
     function confirmDelete() {
-        if (confirm('Are you sure? This will permanently delete your account.')) {
-            account.delete().then(() => {
-                window.location.href = 'index.html';
-            }).catch(e => alert('Error: ' + e.message));
-        }
+        document.getElementById('delete-dialog').classList.add('show');
+    }
+
+    function doDelete() {
+        account.delete().then(() => {
+            window.location.href = 'index.html';
+        }).catch(e => alert('Error: ' + e.message));
     }
 
     (function(){

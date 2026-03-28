@@ -170,7 +170,7 @@
 
 <nav>
     <a href="index.html" class="nav-logo">NAPKIN</a>
-    <span class="nav-user">[ alex_k ]</span>
+    <span class="nav-user" id="nav-user"></span>
 </nav>
 
 <div class="app">
@@ -237,202 +237,225 @@
 
 <script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
 <script>
-    (function(){
-        const { Client, Account } = Appwrite;
-        const client = new Client()
-            .setEndpoint('https://fra.cloud.appwrite.io/v1')
-            .setProject('69c764d8003a944c2295');
-        new Account(client).get().catch(() => {
-            document.getElementById('auth-gate').classList.add('show');
-        });
-    })();
-</script>
-<script>
-const MATCHES = [
-    {
-        id: 1, name: 'sam_r', age: 24, city: 'London', seed: 91, online: true,
-        preview: 'haha yeah that gallery was wild',
-        messages: [
-            { mine: false, text: 'hey! saw you\'re into art too', time: '2d ago' },
-            { mine: true,  text: 'yeah big time — you been to any good shows lately?', time: '2d ago' },
-            { mine: false, text: 'just went to this small one in shoreditch, it was actually really good', time: '1d ago' },
-            { mine: true,  text: 'oh nice, what kind of work?', time: '1d ago' },
-            { mine: false, text: 'haha yeah that gallery was wild', time: '3h ago' },
-        ],
-        unread: 1, newMatch: false
-    },
-    {
-        id: 2, name: 'morgan_p', age: 25, city: 'Paris', seed: 77, online: true,
-        preview: 'matched just now ♥',
-        messages: [],
-        unread: 0, newMatch: true
-    },
-    {
-        id: 3, name: 'riley_t', age: 26, city: 'Amsterdam', seed: 150, online: false,
-        preview: 'let me know if you want to grab coffee',
-        messages: [
-            { mine: false, text: 'hey, your profile is really interesting', time: '5d ago' },
-            { mine: true,  text: 'thanks! love your bio, the marathon thing is impressive', time: '5d ago' },
-            { mine: false, text: 'haha it\'s mostly suffering but worth it', time: '4d ago' },
-            { mine: true,  text: 'lol fair enough. you based in amsterdam full time?', time: '4d ago' },
-            { mine: false, text: 'let me know if you want to grab coffee', time: '2d ago' },
-        ],
-        unread: 0, newMatch: false
-    },
-    {
-        id: 4, name: 'taylor_v', age: 27, city: 'Seoul', seed: 99, online: true,
-        preview: 'matched just now ♥',
-        messages: [],
-        unread: 0, newMatch: true
-    },
-    {
-        id: 5, name: 'jordan_m', age: 29, city: 'NYC', seed: 33, online: false,
-        preview: 'that riff you shared was 🔥',
-        messages: [
-            { mine: false, text: 'fellow music person, nice', time: '1w ago' },
-            { mine: true,  text: 'haha yeah, what do you play?', time: '1w ago' },
-            { mine: false, text: 'guitar mostly, some keys. you?', time: '1w ago' },
-            { mine: true,  text: 'i just listen tbh, but obsessively', time: '6d ago' },
-            { mine: false, text: 'that riff you shared was 🔥', time: '3d ago' },
-        ],
-        unread: 2, newMatch: false
-    },
-];
+    const { Client, Account, Databases, Query, ID, RealtimeResponseEvent } = Appwrite;
+    const client = new Client()
+        .setEndpoint('https://fra.cloud.appwrite.io/v1')
+        .setProject('69c764d8003a944c2295');
+    const account  = new Account(client);
+    const databases = new Databases(client);
 
-let activeId = null;
+    const DB_ID       = '69c7742c000819452b70';
+    const COL_PROFILES = 'profiles';
+    const COL_MATCHES  = 'matches';
+    const COL_MESSAGES = 'messages';
 
-function renderSidebar() {
-    // new matches bubbles
-    const scroll = document.getElementById('new-matches-scroll');
-    const newOnes = MATCHES.filter(m => m.newMatch);
-    newOnes.forEach(m => {
-        const b = document.createElement('div');
-        b.className = 'new-match-bubble';
-        b.innerHTML = `<img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""><span>${m.name}</span>`;
-        b.onclick = () => openChat(m.id);
-        scroll.appendChild(b);
+    let currentUser = null;
+    let MATCHES = [];
+    let activeMatchId = null;
+
+    // Auth check
+    account.get().then(user => {
+        currentUser = user;
+        document.getElementById('nav-user').textContent = '[ ' + (user.name || user.email) + ' ]';
+        loadMatches();
+    }).catch(() => {
+        document.getElementById('auth-gate').classList.add('show');
     });
 
-    // conversation list
-    const list = document.getElementById('match-list');
-    document.getElementById('conv-count').textContent = `${MATCHES.length}_MATCHES`;
-    MATCHES.forEach(m => {
-        const item = document.createElement('div');
-        item.className = 'match-item';
-        item.id = `mi-${m.id}`;
-        item.innerHTML = `
-            <div class="match-avatar">
-                <img src="https://picsum.photos/seed/${m.seed}/80/80" alt="">
-                ${m.online ? '<div class="match-online"></div>' : ''}
-            </div>
-            <div class="match-info">
-                <div class="match-name">${m.name}</div>
-                <div class="match-preview">${m.preview}</div>
-            </div>
-            <div class="match-meta">
-                <div class="match-time">${m.newMatch ? 'now' : m.messages.length ? m.messages.at(-1).time : ''}</div>
-                <div class="match-unread ${m.unread ? '' : 'hidden'}">${m.unread || ''}</div>
-            </div>`;
-        item.onclick = () => openChat(m.id);
-        list.appendChild(item);
-    });
-}
+    async function loadMatches() {
+        try {
+            // Get matches where current user is either user1 or user2
+            const [r1, r2] = await Promise.all([
+                databases.listDocuments(DB_ID, COL_MATCHES, [Query.equal('user1', currentUser.$id), Query.limit(50)]),
+                databases.listDocuments(DB_ID, COL_MATCHES, [Query.equal('user2', currentUser.$id), Query.limit(50)])
+            ]);
+            const allMatches = [...r1.documents, ...r2.documents];
 
-function openChat(id) {
-    const m = MATCHES.find(x => x.id === id);
-    if (!m) return;
-    activeId = id;
+            // Get the other user's profile for each match
+            const profileIds = allMatches.map(m => m.user1 === currentUser.$id ? m.user2 : m.user1);
+            if (profileIds.length === 0) {
+                document.getElementById('conv-count').textContent = '0_MATCHES';
+                return;
+            }
 
-    // sidebar active state
-    document.querySelectorAll('.match-item').forEach(el => el.classList.remove('active'));
-    document.getElementById(`mi-${id}`).classList.add('active');
+            const profileDocs = await databases.listDocuments(DB_ID, COL_PROFILES, [
+                Query.equal('userId', profileIds), Query.limit(50)
+            ]);
 
-    // clear unread
-    m.unread = 0;
-    const badge = document.querySelector(`#mi-${id} .match-unread`);
-    if (badge) badge.classList.add('hidden');
+            MATCHES = allMatches.map(m => {
+                const otherId = m.user1 === currentUser.$id ? m.user2 : m.user1;
+                const profile = profileDocs.documents.find(p => p.userId === otherId) || {};
+                const seed = Math.abs((profile.$id || otherId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+                return {
+                    matchId: m.$id,
+                    userId: otherId,
+                    name: profile.name || 'unknown',
+                    college: profile.college || '',
+                    seed,
+                    preview: m.lastMessage || 'matched ♥',
+                    lastTime: m.lastTime || m.$createdAt,
+                };
+            });
 
-    // populate header
-    document.getElementById('ch-avatar').src = `https://picsum.photos/seed/${m.seed}/80/80`;
-    document.getElementById('ch-name').textContent = m.name;
-    document.getElementById('ch-status').textContent = m.online ? '● ONLINE · ' + m.city : '○ OFFLINE · ' + m.city;
-
-    // banner for new matches
-    const banner = document.getElementById('ch-banner');
-    if (m.newMatch) {
-        document.getElementById('ch-banner-name').textContent = m.name;
-        banner.style.display = 'flex';
-    } else {
-        banner.style.display = 'none';
+            renderSidebar();
+        } catch (err) {
+            console.error('loadMatches error:', err);
+            document.getElementById('conv-count').textContent = 'ERROR';
+        }
     }
 
-    // messages
-    const msgs = document.getElementById('ch-messages');
-    msgs.innerHTML = '';
-    if (m.messages.length === 0) {
-        msgs.innerHTML = `<div style="text-align:center;font-size:10px;color:var(--secondary);margin:auto;padding:32px 0;">
-            No messages yet — say hello!
-        </div>`;
-    } else {
-        m.messages.forEach(msg => {
-            const el = document.createElement('div');
-            el.className = `msg ${msg.mine ? 'mine' : 'theirs'}`;
-            el.innerHTML = `<div class="msg-bubble">${msg.text}</div><div class="msg-time">${msg.time}</div>`;
-            msgs.appendChild(el);
+    function seed(str) {
+        return Math.abs(str.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 1000;
+    }
+
+    function timeAgo(iso) {
+        const diff = Date.now() - new Date(iso).getTime();
+        const m = Math.floor(diff / 60000);
+        if (m < 1) return 'just now';
+        if (m < 60) return m + 'm ago';
+        const h = Math.floor(m / 60);
+        if (h < 24) return h + 'h ago';
+        return Math.floor(h / 24) + 'd ago';
+    }
+
+    function renderSidebar() {
+        const list = document.getElementById('match-list');
+        const scroll = document.getElementById('new-matches-scroll');
+        list.innerHTML = '';
+        scroll.innerHTML = '';
+        document.getElementById('conv-count').textContent = `${MATCHES.length}_MATCHES`;
+
+        MATCHES.forEach(m => {
+            // bubble
+            const b = document.createElement('div');
+            b.className = 'new-match-bubble';
+            b.innerHTML = `<img src="https://picsum.photos/seed/${m.seed}/80/80" alt=""><span>${m.name.split(' ')[0].toLowerCase()}</span>`;
+            b.onclick = () => openChat(m.matchId);
+            scroll.appendChild(b);
+
+            // list item
+            const item = document.createElement('div');
+            item.className = 'match-item';
+            item.id = `mi-${m.matchId}`;
+            item.innerHTML = `
+                <div class="match-avatar">
+                    <img src="https://picsum.photos/seed/${m.seed}/80/80" alt="">
+                </div>
+                <div class="match-info">
+                    <div class="match-name">${m.name}</div>
+                    <div class="match-preview">${m.preview}</div>
+                </div>
+                <div class="match-meta">
+                    <div class="match-time">${timeAgo(m.lastTime)}</div>
+                    <div class="match-unread hidden"></div>
+                </div>`;
+            item.onclick = () => openChat(m.matchId);
+            list.appendChild(item);
         });
+
+        if (MATCHES.length === 0) {
+            list.innerHTML = '<div style="padding:24px 20px;font-size:10px;color:var(--secondary);">NO_MATCHES_YET — go browse profiles.</div>';
+        }
+    }
+
+    async function openChat(matchId) {
+        const m = MATCHES.find(x => x.matchId === matchId);
+        if (!m) return;
+        activeMatchId = matchId;
+
+        document.querySelectorAll('.match-item').forEach(el => el.classList.remove('active'));
+        const item = document.getElementById(`mi-${matchId}`);
+        if (item) item.classList.add('active');
+
+        document.getElementById('ch-avatar').src = `https://picsum.photos/seed/${m.seed}/80/80`;
+        document.getElementById('ch-name').textContent = m.name;
+        document.getElementById('ch-status').textContent = m.college || '';
+        document.getElementById('ch-banner').style.display = 'none';
+
+        document.getElementById('chat-empty').style.display = 'none';
+        const chatActive = document.getElementById('chat-active');
+        chatActive.style.display = 'flex';
+
+        const msgs = document.getElementById('ch-messages');
+        msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:var(--secondary);padding:20px;">LOADING...</div>';
+
+        try {
+            const res = await databases.listDocuments(DB_ID, COL_MESSAGES, [
+                Query.equal('matchId', matchId),
+                Query.orderAsc('$createdAt'),
+                Query.limit(100)
+            ]);
+            msgs.innerHTML = '';
+            if (res.documents.length === 0) {
+                msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:var(--secondary);margin:auto;padding:32px 0;">No messages yet — say hello!</div>';
+            } else {
+                res.documents.forEach(doc => appendMessage(doc.text, doc.senderId === currentUser.$id, doc.$createdAt));
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        } catch (err) {
+            msgs.innerHTML = '<div style="text-align:center;font-size:10px;color:#e05c5c;padding:20px;">FAILED_TO_LOAD_MESSAGES</div>';
+        }
+    }
+
+    function appendMessage(text, mine, time) {
+        const msgs = document.getElementById('ch-messages');
+        const empty = msgs.querySelector('[data-empty]');
+        if (empty) empty.remove();
+        const el = document.createElement('div');
+        el.className = `msg ${mine ? 'mine' : 'theirs'}`;
+        el.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">${timeAgo(time || new Date().toISOString())}</div>`;
+        msgs.appendChild(el);
         msgs.scrollTop = msgs.scrollHeight;
     }
 
-    document.getElementById('chat-empty').style.display = 'none';
-    const active = document.getElementById('chat-active');
-    active.style.display = 'flex';
-}
+    async function sendMessage() {
+        const input = document.getElementById('ch-input');
+        const text = input.value.trim();
+        if (!text || !activeMatchId) return;
+        input.value = '';
 
-function sendMessage() {
-    const input = document.getElementById('ch-input');
-    const text = input.value.trim();
-    if (!text || activeId === null) return;
-    const m = MATCHES.find(x => x.id === activeId);
-    const msg = { mine: true, text, time: 'just now' };
-    m.messages.push(msg);
-    m.preview = text;
-    m.newMatch = false;
-    document.getElementById('ch-banner').style.display = 'none';
+        const m = MATCHES.find(x => x.matchId === activeMatchId);
 
-    const msgs = document.getElementById('ch-messages');
-    // clear empty state if present
-    const empty = msgs.querySelector('div[style]');
-    if (empty) empty.remove();
+        // optimistic UI
+        appendMessage(text, true, new Date().toISOString());
 
-    const el = document.createElement('div');
-    el.className = 'msg mine';
-    el.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">just now</div>`;
-    msgs.appendChild(el);
-    msgs.scrollTop = msgs.scrollHeight;
+        try {
+            await databases.createDocument(DB_ID, COL_MESSAGES, ID.unique(), {
+                matchId:  activeMatchId,
+                senderId: currentUser.$id,
+                text
+            });
+            // update match preview
+            await databases.updateDocument(DB_ID, COL_MATCHES, activeMatchId, {
+                lastMessage: text,
+                lastTime: new Date().toISOString()
+            });
+            if (m) {
+                m.preview = text;
+                const preview = document.querySelector(`#mi-${activeMatchId} .match-preview`);
+                if (preview) preview.textContent = text;
+            }
+        } catch (err) {
+            console.error('sendMessage error:', err);
+        }
+    }
 
-    // update sidebar preview
-    document.querySelector(`#mi-${activeId} .match-preview`).textContent = text;
-    input.value = '';
-}
+    function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
 
-function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
-
-// Tooltip
-(function(){
-    const tip = document.getElementById('tip');
-    let cur = null;
-    document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
-    document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
-    document.addEventListener('mousemove', e => {
-        if (!cur) return;
-        const x = e.clientX + 14, y = e.clientY + 14;
-        tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
-        tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
-    });
-    document.addEventListener('scroll', () => tip.classList.remove('show'), true);
-})();
-
-renderSidebar();
+    // Tooltip
+    (function(){
+        const tip = document.getElementById('tip');
+        let cur = null;
+        document.addEventListener('mouseover', e => { const el = e.target.closest('[data-tip]'); if (!el) return; cur = el; tip.textContent = el.dataset.tip; tip.classList.add('show'); });
+        document.addEventListener('mouseout', e => { if (cur && !cur.contains(e.relatedTarget)) { tip.classList.remove('show'); cur = null; } });
+        document.addEventListener('mousemove', e => {
+            if (!cur) return;
+            const x = e.clientX + 14, y = e.clientY + 14;
+            tip.style.left = (x + tip.offsetWidth > window.innerWidth ? e.clientX - tip.offsetWidth - 6 : x) + 'px';
+            tip.style.top  = (y + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 6 : y) + 'px';
+        });
+        document.addEventListener('scroll', () => tip.classList.remove('show'), true);
+    })();
 </script>
 </body>
 </html>

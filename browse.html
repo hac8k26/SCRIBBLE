@@ -69,21 +69,38 @@
         /* MODAL */
         .modal-backdrop { position: fixed; inset: 0; background: rgba(26,26,24,0.6); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
         .modal-backdrop.open { display: flex; }
-        .modal { background: var(--bg); border: 1px solid var(--border); max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; }
+        .modal { background: var(--bg); border: 1px solid var(--border); max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; position: relative; }
         .modal-img { aspect-ratio: 3/4; overflow: hidden; }
         .modal-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .modal-body { padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; }
+        .modal-body { padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; }
         .modal-name { font-size: 20px; font-weight: 600; }
         .modal-meta { font-size: 10px; color: var(--secondary); letter-spacing: 0.05em; line-height: 1.8; }
         .modal-bio { font-size: 11px; color: var(--secondary); line-height: 1.8; }
         .modal-tags { display: flex; flex-wrap: wrap; gap: 6px; }
         .modal-tag { font-size: 9px; padding: 4px 8px; border: 1px solid var(--border); color: var(--secondary); }
-        .modal-actions { display: flex; gap: 8px; margin-top: auto; }
+        .modal-msg-box { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: auto; }
+        .modal-msg-label { font-size: 9px; color: var(--accent); letter-spacing: 0.12em; }
+        .modal-msg-row { display: flex; gap: 6px; }
+        .modal-msg-input {
+            flex: 1; padding: 9px 12px; border: 1px solid var(--border);
+            background: var(--bg); font-family: var(--mono); font-size: 11px;
+            color: var(--text); outline: none;
+        }
+        .modal-msg-input:focus { border-color: var(--accent); }
+        .modal-msg-input::placeholder { color: var(--secondary); }
+        .modal-msg-send {
+            padding: 9px 16px; background: var(--accent); color: #fff;
+            border: none; font-family: var(--mono); font-size: 11px; font-weight: 600;
+            cursor: pointer; white-space: nowrap;
+        }
+        .modal-msg-send:hover { background: #c0603e; }
+        .modal-msg-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-actions { display: flex; gap: 8px; }
         .modal-like { flex: 1; padding: 12px; background: var(--accent); color: #fff; border: none; font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: pointer; }
         .modal-like:hover { background: #c0603e; }
         .modal-pass { flex: 1; padding: 12px; background: none; color: var(--text); border: 1px solid var(--border); font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: pointer; }
         .modal-pass:hover { border-color: var(--text); }
-        .modal-close { position: absolute; top: 12px; right: 12px; background: none; border: 1px solid var(--border); width: 28px; height: 28px; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--secondary); display: flex; align-items: center; justify-content: center; }
+        .modal-close { position: absolute; top: 12px; right: 12px; background: none; border: 1px solid var(--border); width: 28px; height: 28px; cursor: pointer; font-family: var(--mono); font-size: 12px; color: var(--secondary); display: flex; align-items: center; justify-content: center; z-index: 10; }
         .modal-close:hover { border-color: var(--accent); color: var(--accent); }
 
         /* MATCH TOAST */
@@ -139,7 +156,7 @@
 
 <nav>
     <a href="index.html" class="nav-logo" data-tip="Back to home">NAPKIN</a>
-    <a href="join.html" class="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
+    <a href="join.html" class="nav-cta" id="nav-cta" data-tip="Sign in to like profiles">LOGIN / JOIN →</a>
 </nav>
 
 <!-- TOOLBAR -->
@@ -170,9 +187,16 @@
             </div>
             <div class="modal-bio" id="modal-bio"></div>
             <div class="modal-tags" id="modal-tags"></div>
+            <div class="modal-msg-box">
+                <div class="modal-msg-label">// SEND_A_MESSAGE</div>
+                <div class="modal-msg-row">
+                    <input class="modal-msg-input" id="modal-msg-input" type="text" placeholder="Say something..." onkeydown="if(event.key==='Enter') sendFirstMessage()">
+                    <button class="modal-msg-send" id="modal-msg-send" onclick="sendFirstMessage()">SEND →</button>
+                </div>
+            </div>
             <div class="modal-actions">
-                <button class="modal-like" onclick="likeProfile()" data-tip="Like this profile">♥ LIKE_PROFILE</button>
-                <button class="modal-pass" onclick="closeModal(null,true)" data-tip="Pass on this profile">PASS →</button>
+                <button class="modal-like" onclick="likeProfile()" data-tip="Like this profile">♥ LIKE</button>
+                <button class="modal-pass" onclick="closeModal(null,true)" data-tip="Pass">PASS →</button>
             </div>
         </div>
     </div>
@@ -191,22 +215,26 @@
 
 <script src="https://cdn.jsdelivr.net/npm/appwrite@16/dist/iife/sdk.js"></script>
 <script>
-    const { Client, Account, Databases, Query } = Appwrite;
+    const { Client, Account, Databases, Query, ID } = Appwrite;
     const client = new Client()
         .setEndpoint('https://fra.cloud.appwrite.io/v1')
         .setProject('69c764d8003a944c2295');
     const account = new Account(client);
     const databases = new Databases(client);
 
-    const DB_ID  = '69c7742c000819452b70';
-    const COL_ID = 'profiles';
+    const DB_ID       = '69c7742c000819452b70';
+    const COL_ID      = 'profiles';
+    const COL_MATCHES  = 'matches';
+    const COL_MESSAGES = 'messages';
 
     let currentUser = null;
     let PROFILES = [];
+    let activeProfile = null;
 
     // Auth check + load profiles
     account.get().then(user => {
         currentUser = user;
+        document.getElementById('nav-cta').style.display = 'none';
         loadProfiles();
     }).catch(() => {
         document.getElementById('auth-gate').classList.add('show');
@@ -269,12 +297,68 @@
         document.getElementById('modal-meta').innerHTML = `AGE: ${p.age}<br>COLLEGE: ${p.college || '—'}`;
         document.getElementById('modal-bio').textContent = p.bio || '';
         document.getElementById('modal-tags').innerHTML = '';
+        document.getElementById('modal-msg-input').value = '';
+        document.getElementById('modal-msg-send').disabled = false;
+        document.getElementById('modal-msg-send').textContent = 'SEND →';
         document.getElementById('modal').classList.add('open');
     }
 
     function closeModal(e, force) {
         if (force || (e && e.target === document.getElementById('modal'))) {
             document.getElementById('modal').classList.remove('open');
+        }
+    }
+
+    async function sendFirstMessage() {
+        const input = document.getElementById('modal-msg-input');
+        const btn = document.getElementById('modal-msg-send');
+        const text = input.value.trim();
+        if (!text || !activeProfile) return;
+
+        btn.disabled = true;
+        btn.textContent = '...';
+
+        try {
+            // check if match already exists
+            const existing = await databases.listDocuments(DB_ID, COL_MATCHES, [
+                Query.equal('user1', currentUser.$id),
+                Query.equal('user2', activeProfile.userId)
+            ]);
+            const existing2 = existing.total === 0
+                ? await databases.listDocuments(DB_ID, COL_MATCHES, [
+                    Query.equal('user1', activeProfile.userId),
+                    Query.equal('user2', currentUser.$id)
+                  ])
+                : existing;
+
+            let matchId;
+            if (existing2.total > 0) {
+                matchId = existing2.documents[0].$id;
+            } else {
+                const match = await databases.createDocument(DB_ID, COL_MATCHES, ID.unique(), {
+                    user1: currentUser.$id,
+                    user2: activeProfile.userId,
+                    lastMessage: text,
+                    lastTime: new Date().toISOString()
+                });
+                matchId = match.$id;
+            }
+
+            await databases.createDocument(DB_ID, COL_MESSAGES, ID.unique(), {
+                matchId,
+                senderId: currentUser.$id,
+                text
+            });
+
+            closeModal(null, true);
+            const toast = document.getElementById('match-toast');
+            toast.textContent = '✓ MESSAGE_SENT — view in matches';
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); toast.textContent = '♥ IT\'S A MATCH — START_CHATTING →'; }, 3000);
+        } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.textContent = 'SEND →';
         }
     }
 
