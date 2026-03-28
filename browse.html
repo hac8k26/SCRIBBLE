@@ -244,10 +244,14 @@
         document.getElementById('result-count').textContent = 'LOADING...';
         try {
             const res = await databases.listDocuments(DB_ID, COL_ID, [Query.limit(100)]);
-            // exclude own profile
             PROFILES = res.documents.filter(d => d.userId !== currentUser.$id);
             renderProfiles(PROFILES);
         } catch (err) {
+            const grid = document.getElementById('profiles-grid');
+            grid.innerHTML = `<div style="padding:40px;font-size:11px;color:#e05c5c;grid-column:1/-1;">
+                ERROR: ${err.message}<br><br>
+                <span style="color:var(--secondary);font-size:10px;">Fix: In Appwrite console → profiles collection → Settings → Permissions → Add role "users" with Read access.</span>
+            </div>`;
             document.getElementById('result-count').textContent = 'ERROR';
             console.error(err);
         }
